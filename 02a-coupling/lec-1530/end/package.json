@@ -1,0 +1,29 @@
+{
+	"name": "parkboard",
+	"description": "CPSC 310 — City of Westbrook Parks & Recreation catalogue (week 2)",
+	"private": true,
+	"version": "0.2.0",
+	"engines": {
+		"node": ">= 24 < 25"
+	},
+	"devDependencies": {
+		"@tsconfig/node24": "24.0.1",
+		"@types/chai": "4.3.0",
+		"@types/mocha": "10.0.10",
+		"@types/node": "24.3.0",
+		"chai": "4.3.4",
+		"mocha": "11.7.1",
+		"nyc": "17.1.0",
+		"prettier": "3.6.2",
+		"ts-node": "10.9.2",
+		"typescript": "5.9.2"
+	},
+	"scripts": {
+		"cover": "nyc --reporter text --reporter html yarn run test",
+		"build": "tsc && yarn prettier:check",
+		"test": "mocha",
+		"prettier:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+		"prettier:fix": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+		"start": "ts-node src/main.ts"
+	}
+}
