@@ -41,7 +41,7 @@ export function render(offering: Offering, customer: Customer): string {
 		pad("Base fee", 14) + "$" + offering.fee.toFixed(2),
 	];
 
-	if (!customer.resident) lines.push(pad("Non-resident", 14) + "+25%");
+	if (!customer.resident) lines.push(pad("Non-resident", 14) + "+30%");
 	if (customer.isSeniorIn(offering.year) || customer.isYouthIn(offering.year)) {
 		lines.push(pad("Concession", 14) + "-30%");
 	}
