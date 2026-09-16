@@ -50,7 +50,8 @@ export function search(field: string, op: string, value: string, options: Search
 	for (const offering of matched) {
 		// what this offering costs the person running the search
 		let price = offering.fee;
-		if (!options.resident) price = price * 1.25;
+		// TODO: seniors discount here too
+		if (!options.resident) price = price * 1.3;
 		price = Math.round(price * 1.05 * 100) / 100;
 
 		const centre = findCentre(offering.centreId);

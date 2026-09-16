@@ -12,12 +12,12 @@ import { Customer } from "./Customer";
  */
 
 // id, name, certifications
-const INSTRUCTORS: [string, string, string[]][] = [
-	["i1", "Virginia Woolf", ["Aquatics"]],
-	["i2", "James Baldwin", ["Fitness", "Sports"]],
-	["i3", "Toni Morrison", ["Aquatics", "Skating"]],
-	["i4", "Chinua Achebe", ["Arts"]],
-	["i5", "Gabriel Marquez", ["Fitness"]],
+const INSTRUCTORS: [string, string, string, string[]][] = [
+	["i1", "Virginia", "Woolf", ["Aquatics"]],
+	["i2", "James", "Baldwin", ["Fitness", "Sports"]],
+	["i3", "Toni", "Morrison", ["Aquatics", "Skating"]],
+	["i4", "Chinua", "Achebe", ["Arts"]],
+	["i5", "Gabriel", "Marquez", ["Fitness"]],
 ];
 
 // id, name, birth year, resident
@@ -113,7 +113,7 @@ let centres: Centre[] | undefined = undefined;
 
 export function loadInstructors(): Instructor[] {
 	if (instructors === undefined) {
-		instructors = INSTRUCTORS.map((row) => new Instructor(row[0], row[1], row[2]));
+		instructors = INSTRUCTORS.map((row) => new Instructor(row[0], row[2], row[1], row[3]));
 	}
 	return instructors;
 }

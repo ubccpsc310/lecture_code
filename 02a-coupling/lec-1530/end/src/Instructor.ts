@@ -1,7 +1,8 @@
 export class Instructor {
 	constructor(
 		public id: string,
-		public name: string,
+		public firstName: string,
+		public lastName: string,
 		public certifications: string[]
 	) {}
 
@@ -13,6 +14,7 @@ export class Instructor {
 		return this.certifications.includes(category);
 	}
 	public label(): string {
-		return `${this.name} (${this.role()})`;
+		return `${this.firstName} ${this.lastName} (${this.role()})`;
 	}
 }
+// const kyle = new Instructor("1234", "Kyle", "Chin", []);

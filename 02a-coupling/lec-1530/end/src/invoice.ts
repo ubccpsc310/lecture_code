@@ -9,8 +9,18 @@ import { pad, title } from "./parkboard";
 
 export function priceFor(offering: Offering, customer: Customer): number {
 	let amount = offering.fee;
-	if (!customer.resident) amount = amount * 1.25;
-	if (customer.isSeniorIn(offering.year) || customer.isYouthIn(offering.year)) amount = amount * 0.7;
+	// update to 1.30
+	if (!customer.resident) amount = amount * 1.3;
+	// split this out and condition on offering's category
+	if (customer.isSeniorIn(offering.year)) {
+		if (["Aquatics", "Fitness"].includes(offering.program.category)) {
+			// Aquatics or fitness ==> free
+			amount = 0;
+		} else {
+			amount = amount * 0.7;
+		}
+	}
+	if (customer.isYouthIn(offering.year)) amount = amount * 0.7;
 	amount = amount * 1.05;
 	return Math.round(amount * 100) / 100;
 }

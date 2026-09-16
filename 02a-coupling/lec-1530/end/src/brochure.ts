@@ -28,7 +28,7 @@ export function render(season: string): string {
 			lines.push(
 				"  " +
 					pad(offering.id, 10) +
-					pad("with " + offering.instructor.name, 24) +
+					pad("with " + offering.instructor.firstName + offering.instructor.lastName, 24) +
 					pad("$" + price, 8) +
 					pad(where, 56) +
 					spacesLabel(offering)
