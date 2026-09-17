@@ -148,13 +148,14 @@ export function loadPrograms(): Program[] {
 	for (const row of REGISTRATIONS) {
 		const offering = findOffering(row[0]);
 		if (offering === undefined) continue;
+		// Block A: registration
 		for (const id of row[1].split(" ").filter((each) => each.length > 0)) {
 			const customer = people.find((candidate) => candidate.id === id);
 			if (customer !== undefined) {
-				offering.registrations.push(customer);
-				if (!customer.interests.includes(offering.program.category)) {
-					customer.interests.push(offering.program.category);
-					if (customer.interests.length >= 5) {
+				offering.registrations.push(customer);   // (1)
+				if (!customer.interests.includes(offering.program.category)) {   // (2)
+					customer.interests.push(offering.program.category);   // (3)
+					if (customer.interests.length >= 5) {   // (4)
 						customer.status = "Community Champion";
 					} else if (customer.interests.length >= 3) {
 						customer.status = "Frequent Customer";
@@ -162,6 +163,8 @@ export function loadPrograms(): Program[] {
 				}
 			}
 		}
+
+		// Block B: waitlist
 		for (const id of row[2].split(" ").filter((each) => each.length > 0)) {
 			const customer = people.find((candidate) => candidate.id === id);
 			if (customer !== undefined) {
