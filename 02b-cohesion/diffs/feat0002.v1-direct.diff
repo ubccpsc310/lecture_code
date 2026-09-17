@@ -1,0 +1,155 @@
+commit b89151138c8a37d65a90c98cb754baaa56b15732
+Author: b <a@b>
+Date:   Mon Aug 24 14:54:35 2026 -0700
+
+    FEAT-0002: loyalty tiers, waitlists count
+
+diff --git a/src/Offering.ts b/src/Offering.ts
+index 6fc429d..706b7f3 100644
+--- a/src/Offering.ts
++++ b/src/Offering.ts
+@@ -40,12 +40,22 @@ export class Offering {
+ 	public register(customer: Customer): boolean {
+ 		if (this.isFull()) {
+ 			this.waitlist.push(customer);
++			if (!customer.interests.includes(this.program.category)) {
++				customer.interests.push(this.program.category);
++				if (customer.interests.length >= 5) {
++					customer.status = "Community Champion";
++				} else if (customer.interests.length >= 3) {
++					customer.status = "Frequent Customer";
++				}
++			}
+ 			return false;
+ 		}
+ 		this.registrations.push(customer);
+ 		if (!customer.interests.includes(this.program.category)) {
+ 			customer.interests.push(this.program.category);
+-			if (customer.interests.length >= 3) {
++			if (customer.interests.length >= 5) {
++				customer.status = "Community Champion";
++			} else if (customer.interests.length >= 3) {
+ 				customer.status = "Frequent Customer";
+ 			}
+ 		}
+diff --git a/src/catalogue.ts b/src/catalogue.ts
+index db486e4..451ba6a 100644
+--- a/src/catalogue.ts
++++ b/src/catalogue.ts
+@@ -150,11 +150,31 @@ export function loadPrograms(): Program[] {
+ 		if (offering === undefined) continue;
+ 		for (const id of row[1].split(" ").filter((each) => each.length > 0)) {
+ 			const customer = people.find((candidate) => candidate.id === id);
+-			if (customer !== undefined) offering.registrations.push(customer);
++			if (customer !== undefined) {
++				offering.registrations.push(customer);
++				if (!customer.interests.includes(offering.program.category)) {
++					customer.interests.push(offering.program.category);
++					if (customer.interests.length >= 5) {
++						customer.status = "Community Champion";
++					} else if (customer.interests.length >= 3) {
++						customer.status = "Frequent Customer";
++					}
++				}
++			}
+ 		}
+ 		for (const id of row[2].split(" ").filter((each) => each.length > 0)) {
+ 			const customer = people.find((candidate) => candidate.id === id);
+-			if (customer !== undefined) offering.waitlist.push(customer);
++			if (customer !== undefined) {
++				offering.waitlist.push(customer);
++				if (!customer.interests.includes(offering.program.category)) {
++					customer.interests.push(offering.program.category);
++					if (customer.interests.length >= 5) {
++						customer.status = "Community Champion";
++					} else if (customer.interests.length >= 3) {
++						customer.status = "Frequent Customer";
++					}
++				}
++			}
+ 		}
+ 	}
+
+@@ -182,6 +202,8 @@ export function findCentre(centreId: string): Centre | undefined {
+ }
+
+ export function findCustomer(customerId: string): Customer | undefined {
++	// standing comes from registrations, so the catalogue has to be wired up first
++	loadPrograms();
+ 	return loadCustomers().find((customer) => customer.id === customerId);
+ }
+
+diff --git a/src/main.ts b/src/main.ts
+index fcb6fb4..b703337 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -1,5 +1,5 @@
+ import { search } from "./parkboard";
+-import { findOffering, findCustomer, loadCustomers } from "./catalogue";
++import { findOffering, findCustomer, loadCustomers, loadPrograms } from "./catalogue";
+ import * as brochure from "./brochure";
+ import * as invoice from "./invoice";
+
+@@ -47,6 +47,7 @@ export function run(argv: string[]): string {
+ 		return outcome + "\n\n" + invoice.render(offering, customer);
+ 	}
+ 	if (command === "customers") {
++		loadPrograms();
+ 		return loadCustomers()
+ 			.map((customer) => `${customer.id}  ${customer.name} (born ${customer.birthYear})`)
+ 			.join("\n");
+diff --git a/test/parkboard.spec.ts b/test/parkboard.spec.ts
+index cd30a81..83798ec 100644
+--- a/test/parkboard.spec.ts
++++ b/test/parkboard.spec.ts
+@@ -1,6 +1,14 @@
+ import { expect } from "chai";
+ import { run } from "../src/main";
+-import { loadPrograms, loadCentres, loadCustomers, loadInstructors, findCentre, findCustomer } from "../src/catalogue";
++import {
++	loadPrograms,
++	loadCentres,
++	loadCustomers,
++	loadInstructors,
++	findCentre,
++	findCustomer,
++	findOffering,
++} from "../src/catalogue";
+ import { allOfferings, search, spacesLabel, pad } from "../src/parkboard";
+ import { priceFor } from "../src/invoice";
+ import { Instructor } from "../src/Instructor";
+@@ -199,6 +207,34 @@ describe("invoice", () => {
+ 	});
+ });
+
++describe("loyalty", () => {
++	it("Test 42a: gives a seeded customer their interests", () => {
++		expect(customer("c01").interests).to.have.members(["Aquatics", "Fitness", "Skating", "Sports"]);
++	});
++
++	it("Test 42b: promotes a customer who has taken three categories", () => {
++		expect(customer("c01").status).to.equal("Frequent Customer");
++	});
++
++	it("Test 42c: promotes a customer who has taken all five", () => {
++		expect(customer("c05").interests).to.have.length(5);
++		expect(customer("c05").status).to.equal("Community Champion");
++	});
++
++	it("Test 42d: counts a waitlist place as interest", () => {
++		const before = customer("c02").interests.length;
++		findOffering("AR-105-B")!.register(customer("c02"));
++		expect(customer("c02").interests).to.contain("Arts");
++		expect(customer("c02").interests.length).to.equal(before + 1);
++	});
++
++	it("Test 42e: does not record the same category twice", () => {
++		const before = customer("c05").interests.length;
++		findOffering("AR-105-A")!.register(customer("c05"));
++		expect(customer("c05").interests.length).to.equal(before);
++	});
++});
++
+ describe("registering", () => {
+ 	it("Test 42: refuses a customer who is already registered", () => {
+ 		expect(run(["register", "AQ-201-B", "c04"])).to.contain("already registered");

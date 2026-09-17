@@ -1,0 +1,35 @@
+{
+	"name": "parkboard",
+	"description": "CPSC 310 — City of Westbrook Parks & Recreation catalogue (week 2)",
+	"private": true,
+	"version": "0.2.0",
+	"engines": {
+		"node": ">= 24 < 25"
+	},
+	"devDependencies": {
+		"@tsconfig/node24": "24.0.1",
+		"@types/chai": "4.3.0",
+		"@types/mocha": "10.0.10",
+		"@types/node": "24.3.0",
+		"chai": "4.3.4",
+		"mocha": "11.7.1",
+		"nyc": "17.1.0",
+		"prettier": "3.6.2",
+		"ts-node": "10.9.2",
+		"typescript": "5.9.2"
+	},
+	"scripts": {
+		"cover": "nyc --reporter text --reporter html yarn run test",
+		"build": "yarn build:start && yarn build:v1-direct && yarn build:v2-refactor",
+		"build:start": "tsc -p start",
+		"build:v1-direct": "tsc -p v1-direct",
+		"build:v2-refactor": "tsc -p v2-refactor",
+		"test": "yarn test:start && yarn test:v1-direct && yarn test:v2-refactor",
+		"test:start": "TS_NODE_PROJECT=start/tsconfig.json mocha --spec \"start/test/**/*.spec.ts\"",
+		"test:v1-direct": "TS_NODE_PROJECT=v1-direct/tsconfig.json mocha --spec \"v1-direct/test/**/*.spec.ts\"",
+		"test:v2-refactor": "TS_NODE_PROJECT=v2-refactor/tsconfig.json mocha --spec \"v2-refactor/test/**/*.spec.ts\"",
+		"prettier:check": "prettier --check \"start/src/**/*.ts\" \"start/test/**/*.ts\" \"v1-direct/src/**/*.ts\" \"v1-direct/test/**/*.ts\" \"v2-refactor/src/**/*.ts\" \"v2-refactor/test/**/*.ts\"",
+		"prettier:fix": "prettier --write \"start/src/**/*.ts\" \"start/test/**/*.ts\" \"v1-direct/src/**/*.ts\" \"v1-direct/test/**/*.ts\" \"v2-refactor/src/**/*.ts\" \"v2-refactor/test/**/*.ts\"",
+		"start": "ts-node --project start/tsconfig.json start/src/main.ts"
+	}
+}

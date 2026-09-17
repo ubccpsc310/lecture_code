@@ -1,0 +1,109 @@
+commit e3c9a4b6f1d0a7c5b2e8f4a1d6c3b9e7a5f0d2c8
+Author: b <a@b>
+Date:   Mon Aug 24 15:20:11 2026 -0700
+
+    REFACTOR-0002: give Customer sole ownership of its loyalty status
+
+    The status rule was duplicated across Offering.register (both branches)
+    and catalogue.ts's seeding loops. Customer now owns the invariant that
+    relates interests to status: recordCategory() is the only way to add an
+    interest, and status is derived from interests rather than stored.
+
+diff --git a/src/Customer.ts b/src/Customer.ts
+index 8e4a16c..ad7ccae 100644
+--- a/src/Customer.ts
++++ b/src/Customer.ts
+@@ -1,6 +1,5 @@
+ export class Customer {
+ 	public interests: string[];
+-	public status: string;
+ 	constructor(
+ 		public id: string,
+ 		public name: string,
+@@ -8,7 +7,18 @@ export class Customer {
+ 		public resident: boolean
+ 	) {
+ 		this.interests = [];
+-		this.status = "Default";
++	}
++
++	public get status(): string {
++		if (this.interests.length >= 5) return "Community Champion";
++		if (this.interests.length >= 3) return "Frequent Customer";
++		return "Default";
++	}
++
++	public recordCategory(category: string): void {
++		if (!this.interests.includes(category)) {
++			this.interests.push(category);
++		}
+ 	}
+
+ 	public role(): string {
+diff --git a/src/Offering.ts b/src/Offering.ts
+index 706b7f3..a002289 100644
+--- a/src/Offering.ts
++++ b/src/Offering.ts
+@@ -40,25 +40,11 @@ export class Offering {
+ 	public register(customer: Customer): boolean {
+ 		if (this.isFull()) {
+ 			this.waitlist.push(customer);
+-			if (!customer.interests.includes(this.program.category)) {
+-				customer.interests.push(this.program.category);
+-				if (customer.interests.length >= 5) {
+-					customer.status = "Community Champion";
+-				} else if (customer.interests.length >= 3) {
+-					customer.status = "Frequent Customer";
+-				}
+-			}
++			customer.recordCategory(this.program.category);
+ 			return false;
+ 		}
+ 		this.registrations.push(customer);
+-		if (!customer.interests.includes(this.program.category)) {
+-			customer.interests.push(this.program.category);
+-			if (customer.interests.length >= 5) {
+-				customer.status = "Community Champion";
+-			} else if (customer.interests.length >= 3) {
+-				customer.status = "Frequent Customer";
+-			}
+-		}
++		customer.recordCategory(this.program.category);
+ 		return true;
+ 	}
+
+diff --git a/src/catalogue.ts b/src/catalogue.ts
+index 451ba6a..f543d75 100644
+--- a/src/catalogue.ts
++++ b/src/catalogue.ts
+@@ -152,28 +152,14 @@ export function loadPrograms(): Program[] {
+ 			const customer = people.find((candidate) => candidate.id === id);
+ 			if (customer !== undefined) {
+ 				offering.registrations.push(customer);
+-				if (!customer.interests.includes(offering.program.category)) {
+-					customer.interests.push(offering.program.category);
+-					if (customer.interests.length >= 5) {
+-						customer.status = "Community Champion";
+-					} else if (customer.interests.length >= 3) {
+-						customer.status = "Frequent Customer";
+-					}
+-				}
++				customer.recordCategory(offering.program.category);
+ 			}
+ 		}
+ 		for (const id of row[2].split(" ").filter((each) => each.length > 0)) {
+ 			const customer = people.find((candidate) => candidate.id === id);
+ 			if (customer !== undefined) {
+ 				offering.waitlist.push(customer);
+-				if (!customer.interests.includes(offering.program.category)) {
+-					customer.interests.push(offering.program.category);
+-					if (customer.interests.length >= 5) {
+-						customer.status = "Community Champion";
+-					} else if (customer.interests.length >= 3) {
+-						customer.status = "Frequent Customer";
+-					}
+-				}
++				customer.recordCategory(offering.program.category);
+ 			}
+ 		}
+ 	}
