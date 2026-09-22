@@ -13,8 +13,10 @@ Date:   Mon Aug 24 15:36:02 2026 -0700
     register(), the waitlist path, and the catalogue seeding loop don't
     change at all.
 
-    Updates Test 42b: c01 has four interests and now reads as a Community
-    Enthusiast rather than a Frequent Customer.
+    Adds Test 42f to lock in the new tier: a customer with four interests
+    (c03) now reads as a Community Enthusiast. Test 42b is untouched — it
+    already exercises a three-interest customer (c04), which still reads
+    as Frequent Customer under the new thresholds.
 
 diff --git a/src/Customer.ts b/src/Customer.ts
 index ad7ccae..c41f5b2 100644
@@ -29,17 +31,18 @@ index ad7ccae..c41f5b2 100644
  		return "Default";
  	}
 diff --git a/test/parkboard.spec.ts b/test/parkboard.spec.ts
-index 9b3e7a1..2f6d0c8 100644
+index 9b3e7a1..7c1d4f9 100644
 --- a/test/parkboard.spec.ts
 +++ b/test/parkboard.spec.ts
-@@ -212,8 +212,8 @@ describe("loyalty", () => {
- 		expect(customer("c01").interests).to.have.members(["Aquatics", "Fitness", "Skating", "Sports"]);
+@@ -233,6 +233,11 @@ describe("loyalty", () => {
+ 		findOffering("AR-105-A")!.register(customer("c05"));
+ 		expect(customer("c05").interests.length).to.equal(before);
  	});
++
++	it("Test 42f: promotes a customer who has taken four", () => {
++		expect(customer("c03").interests).to.have.length(4);
++		expect(customer("c03").status).to.equal("Community Enthusiast");
++	});
+ });
 
--	it("Test 42b: promotes a customer who has taken three categories", () => {
--		expect(customer("c01").status).to.equal("Frequent Customer");
-+	it("Test 42b: promotes a customer who has taken four categories", () => {
-+		expect(customer("c01").status).to.equal("Community Enthusiast");
- 	});
-
- 	it("Test 42c: promotes a customer who has taken all five", () => {
+ describe("registering", () => {
