@@ -213,7 +213,7 @@ describe("loyalty", () => {
 	});
 
 	it("Test 42b: promotes a customer who has taken three categories", () => {
-		expect(customer("c01").status).to.equal("Frequent Customer");
+		expect(customer("c04").status).to.equal("Frequent Customer");
 	});
 
 	it("Test 42c: promotes a customer who has taken all five", () => {
