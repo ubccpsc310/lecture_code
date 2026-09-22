@@ -1,0 +1,73 @@
+commit a9d3f6c1e8b4507d2a9f3c6e1b8d4a0f7c2e5b9d
+Author: b <a@b>
+Date:   Tue Sep 22 11:40:02 2026 -0700
+
+    FEAT-0004: apply the facility modernization levy
+
+    Council approved a 2% "facility modernization levy" on every
+    registration and price quote, applied after tax, effective this
+    quarter (motion 2026-09-14).
+
+    Because REFACTOR-0003 had already pulled the surcharge, concession,
+    and tax rates out into named constants next to a single computation,
+    the levy slots in the same way: one constant, one multiplication, one
+    line on the receipt. Nothing about priceFor's shape needed to change.
+
+    Updates Tests 34-37 for the new totals.
+
+diff --git a/src/invoice.ts b/src/invoice.ts
+index 894a898..d054d79 100644
+--- a/src/invoice.ts
++++ b/src/invoice.ts
+@@ -10,6 +10,7 @@
+ const NON_RESIDENT_SURCHARGE = 1.25;
+ const CONCESSION_DISCOUNT = 0.7;
+ const TAX_RATE = 1.05;
++const MODERNIZATION_LEVY = 1.02;
+ const CENTS_PER_DOLLAR = 100;
+ 
+ export function priceFor(offering: Offering, customer: Customer): number {
+@@ -17,6 +18,7 @@
+ 	if (!customer.resident) amount = amount * NON_RESIDENT_SURCHARGE;
+ 	if (customer.isSeniorIn(offering.year) || customer.isYouthIn(offering.year)) amount = amount * CONCESSION_DISCOUNT;
+ 	amount = amount * TAX_RATE;
++	amount = amount * MODERNIZATION_LEVY;
+ 	return Math.round(amount * CENTS_PER_DOLLAR) / CENTS_PER_DOLLAR;
+ }
+ 
+@@ -42,6 +44,7 @@
+ 	}
+ 
+ 	lines.push(pad("Tax", 14) + "+5%");
++	lines.push(pad("Modernization levy", 14) + "+2%");
+ 	lines.push("");
+ 	lines.push(pad("Total", 14) + "$" + amount.toFixed(2));
+ 
+diff --git a/test/parkboard.spec.ts b/test/parkboard.spec.ts
+index 83798ec..a108da6 100644
+--- a/test/parkboard.spec.ts
++++ b/test/parkboard.spec.ts
+@@ -173,19 +173,19 @@
+ 
+ describe("invoice", () => {
+ 	it("Test 34: prices an adult resident", () => {
+-		expect(priceFor(offering("FT-110-A"), customer("c09"))).to.equal(115.5);
++		expect(priceFor(offering("FT-110-A"), customer("c09"))).to.equal(117.81);
+ 	});
+ 
+ 	it("Test 35: adds the non-resident surcharge", () => {
+-		expect(priceFor(offering("FT-110-A"), customer("c10"))).to.equal(144.38);
++		expect(priceFor(offering("FT-110-A"), customer("c10"))).to.equal(147.26);
+ 	});
+ 
+ 	it("Test 36: applies the concession to seniors", () => {
+-		expect(priceFor(offering("FT-110-A"), customer("c01"))).to.equal(80.85);
++		expect(priceFor(offering("FT-110-A"), customer("c01"))).to.equal(82.47);
+ 	});
+ 
+ 	it("Test 37: applies the concession to youth", () => {
+-		expect(priceFor(offering("FT-110-A"), customer("c20"))).to.equal(80.85);
++		expect(priceFor(offering("FT-110-A"), customer("c20"))).to.equal(82.47);
+ 	});
+ 
+ 	it("Test 38: renders a receipt naming the program and customer", () => {

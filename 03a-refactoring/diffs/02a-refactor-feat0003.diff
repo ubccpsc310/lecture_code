@@ -1,0 +1,39 @@
+commit f1a4c8e2b6d9037a5c1e8f4b2d6a9c3e7f0b1d5a
+Author: b <a@b>
+Date:   Tue Sep 22 09:05:44 2026 -0700
+
+    REFACTOR-0003: name the rates in Invoice.priceFor
+
+    priceFor mixed four unrelated literals into one expression: the
+    non-resident surcharge, the senior/youth concession, the tax rate, and
+    the cents-rounding divisor. A reader had to work out what 1.25, 0.7,
+    1.05, and 100 each meant from how they were used. Naming them states
+    the meaning once, at the point of declaration, instead of asking every
+    reader to re-derive it.
+
+diff --git a/src/invoice.ts b/src/invoice.ts
+index 3d8a1f2..b7c5e94 100644
+--- a/src/invoice.ts
++++ b/src/invoice.ts
+@@ -7,12 +7,17 @@
+  * What a person actually pays at the counter.
+  */
+ 
++const NON_RESIDENT_SURCHARGE = 1.25;
++const CONCESSION_DISCOUNT = 0.7;
++const TAX_RATE = 1.05;
++const CENTS_PER_DOLLAR = 100;
++
+ export function priceFor(offering: Offering, customer: Customer): number {
+ 	let amount = offering.fee;
+-	if (!customer.resident) amount = amount * 1.25;
+-	if (customer.isSeniorIn(offering.year) || customer.isYouthIn(offering.year)) amount = amount * 0.7;
+-	amount = amount * 1.05;
+-	return Math.round(amount * 100) / 100;
++	if (!customer.resident) amount = amount * NON_RESIDENT_SURCHARGE;
++	if (customer.isSeniorIn(offering.year) || customer.isYouthIn(offering.year)) amount = amount * CONCESSION_DISCOUNT;
++	amount = amount * TAX_RATE;
++	return Math.round(amount * CENTS_PER_DOLLAR) / CENTS_PER_DOLLAR;
+ }
+ 
+ export function render(offering: Offering, customer: Customer): string {

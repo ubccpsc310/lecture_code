@@ -1,0 +1,82 @@
+commit e5b8d2a6c9f3170e4b8a2d5c9f1e4b7a0d3c6f9b
+Author: b <a@b>
+Date:   Tue Sep 22 14:05:18 2026 -0700
+
+    REFACTOR-0007: give price rules one home, starting with search
+
+    REFACTOR-0003 and FIX-0003 each named the same rates in their own
+    file, which is why FIX-0003 was needed at all.
+
+    Introduces src/pricing.ts with an abstract PriceCalculator: a fixed
+    skeleton (non-resident surcharge, then tax and the levy, then round
+    to cents) with one seam, applyConcession(), that defaults to a no-op.
+    QuotePrice takes that default as-is. search() now calls it instead of
+    holding its own copy of the rates.
+
+    priceFor is untouched for now — it still has its own local constants
+    and its own concession step. That's the next diff.
+
+diff --git a/src/pricing.ts b/src/pricing.ts
+new file mode 100644
+index 0000000..4f8c1a7
+--- /dev/null
++++ b/src/pricing.ts
+@@ -0,0 +1,25 @@
++const NON_RESIDENT_SURCHARGE = 1.25;
++const TAX_RATE = 1.05;
++const MODERNIZATION_LEVY = 1.02;
++const CENTS_PER_DOLLAR = 100;
++
++abstract class PriceCalculator {
++	constructor(
++		private readonly fee: number,
++		private readonly resident: boolean
++	) {}
++
++	calculate(): number {
++		let amount = this.resident ? this.fee : this.fee * NON_RESIDENT_SURCHARGE;
++		amount = this.applyConcession(amount);
++		amount = amount * TAX_RATE * MODERNIZATION_LEVY;
++		return Math.round(amount * CENTS_PER_DOLLAR) / CENTS_PER_DOLLAR;
++	}
++
++	protected applyConcession(amount: number): number {
++		return amount;
++	}
++}
++
++/** What front-desk staff see for an anonymous search — no concession, since no customer is attached yet. */
++export class QuotePrice extends PriceCalculator {}
+diff --git a/src/parkboard.ts b/src/parkboard.ts
+index e6b9f38..9d7e1f4 100644
+--- a/src/parkboard.ts
++++ b/src/parkboard.ts
+@@ -1,15 +1,11 @@
+ import { Offering } from "./Offering";
+ import { loadPrograms, findCentre } from "./catalogue";
++import { QuotePrice } from "./pricing";
+ 
+ /**
+  * Catalogue queries, listing, and the shared text helpers everything else uses.
+  */
+ 
+-const NON_RESIDENT_SURCHARGE = 1.25;
+-const TAX_RATE = 1.05;
+-const MODERNIZATION_LEVY = 1.02;
+-const CENTS_PER_DOLLAR = 100;
+-
+ const SEARCHABLE_FIELDS = [
+ 	"id",
+ 	"instructor",
+@@ -54,10 +50,7 @@
+ 	const rows: string[] = [];
+ 	for (const offering of matched) {
+ 		// what this offering costs the person running the search
+-		let price = offering.fee;
+-		if (!options.resident) price = price * NON_RESIDENT_SURCHARGE;
+-		price = price * TAX_RATE * MODERNIZATION_LEVY;
+-		price = Math.round(price * CENTS_PER_DOLLAR) / CENTS_PER_DOLLAR;
++		const price = new QuotePrice(offering.fee, options.resident).calculate();
+ 
+ 		const centre = findCentre(offering.centreId);
+ 		rows.push(

@@ -1,0 +1,79 @@
+commit b4a7e1c8f6d3092e5a8b1c4f7e0d3a6c9b2e5f8a
+Author: b <a@b>
+Date:   Tue Sep 22 15:30:47 2026 -0700
+
+    REFACTOR-0008: WalkInPrice picks up the concession step
+
+    REFACTOR-0007 gave search() a shared PriceCalculator but left the one
+    varying step — concession rates only apply to walk-ins at the counter,
+    never to an anonymous search quote — for priceFor to keep handling on
+    its own.
+
+    Adds WalkInPrice, the other subclass PriceCalculator was written for:
+    it overrides applyConcession() with the real senior/youth discount.
+    priceFor now constructs one instead of carrying its own copy of every
+    rate. Between this and REFACTOR-0007, neither invoice.ts nor
+    parkboard.ts reasons about a rate directly anymore — each just picks
+    which price it's computing.
+
+diff --git a/src/pricing.ts b/src/pricing.ts
+index 4f8c1a7..7f4e9c2 100644
+--- a/src/pricing.ts
++++ b/src/pricing.ts
+@@ -1,4 +1,5 @@
+ const NON_RESIDENT_SURCHARGE = 1.25;
++const CONCESSION_DISCOUNT = 0.7;
+ const TAX_RATE = 1.05;
+ const MODERNIZATION_LEVY = 1.02;
+ const CENTS_PER_DOLLAR = 100;
+@@ -23,3 +24,18 @@
+ 
+ /** What front-desk staff see for an anonymous search — no concession, since no customer is attached yet. */
+ export class QuotePrice extends PriceCalculator {}
++
++/** What a specific customer pays at the counter — concession rates only apply to walk-ins. */
++export class WalkInPrice extends PriceCalculator {
++	constructor(
++		fee: number,
++		resident: boolean,
++		private readonly concessionEligible: boolean
++	) {
++		super(fee, resident);
++	}
++
++	protected applyConcession(amount: number): number {
++		return this.concessionEligible ? amount * CONCESSION_DISCOUNT : amount;
++	}
++}
+diff --git a/src/invoice.ts b/src/invoice.ts
+index d054d79..6b3a8d5 100644
+--- a/src/invoice.ts
++++ b/src/invoice.ts
+@@ -2,24 +2,15 @@
+ import { Customer } from "./Customer";
+ import { findCentre } from "./catalogue";
+ import { pad, title } from "./parkboard";
++import { WalkInPrice } from "./pricing";
+ 
+ /**
+  * What a person actually pays at the counter.
+  */
+ 
+-const NON_RESIDENT_SURCHARGE = 1.25;
+-const CONCESSION_DISCOUNT = 0.7;
+-const TAX_RATE = 1.05;
+-const MODERNIZATION_LEVY = 1.02;
+-const CENTS_PER_DOLLAR = 100;
+-
+ export function priceFor(offering: Offering, customer: Customer): number {
+-	let amount = offering.fee;
+-	if (!customer.resident) amount = amount * NON_RESIDENT_SURCHARGE;
+-	if (customer.isSeniorIn(offering.year) || customer.isYouthIn(offering.year)) amount = amount * CONCESSION_DISCOUNT;
+-	amount = amount * TAX_RATE;
+-	amount = amount * MODERNIZATION_LEVY;
+-	return Math.round(amount * CENTS_PER_DOLLAR) / CENTS_PER_DOLLAR;
++	const concessionEligible = customer.isSeniorIn(offering.year) || customer.isYouthIn(offering.year);
++	return new WalkInPrice(offering.fee, customer.resident, concessionEligible).calculate();
+ }
+ 
+ export function render(offering: Offering, customer: Customer): string {

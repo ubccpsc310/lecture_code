@@ -1,0 +1,63 @@
+commit b7d4f0a8c3e6912d4f7a0c3e6b9d2f5a8c1e4b7d
+Author: b <a@b>
+Date:   Tue Sep 22 13:15:00 2026 -0700
+
+    FIX-0006: reproduce and fix the search/invoice price mismatch
+
+    Front-desk staff report that the price shown when they search for a
+    program to quote a customer doesn't match the final invoice amount for
+    that same registration. search() never picked up the modernization
+    levy from REFACTOR-0003 / FEAT-0004 — that logic only ever lived in
+    invoice.ts.
+
+    Adds a regression test (Test 33b) that quotes FT-110-A for a resident
+    and checks it against priceFor for the same offering and a matching
+    resident customer, then fixes it the same way REFACTOR-0003 fixed
+    invoice.ts: name search's own 1.25 and 1.05, and add the levy it was
+    missing.
+
+diff --git a/src/parkboard.ts b/src/parkboard.ts
+index 1a4d7c2..e6b9f38 100644
+--- a/src/parkboard.ts
++++ b/src/parkboard.ts
+@@ -5,6 +5,11 @@
+  * Catalogue queries, listing, and the shared text helpers everything else uses.
+  */
+
++const NON_RESIDENT_SURCHARGE = 1.25;
++const TAX_RATE = 1.05;
++const MODERNIZATION_LEVY = 1.02;
++const CENTS_PER_DOLLAR = 100;
++
+ const SEARCHABLE_FIELDS = [
+ 	"id",
+ 	"instructor",
+@@ -50,8 +55,9 @@
+ 	for (const offering of matched) {
+ 		// what this offering costs the person running the search
+ 		let price = offering.fee;
+-		if (!options.resident) price = price * 1.25;
+-		price = Math.round(price * 1.05 * 100) / 100;
++		if (!options.resident) price = price * NON_RESIDENT_SURCHARGE;
++		price = price * TAX_RATE * MODERNIZATION_LEVY;
++		price = Math.round(price * CENTS_PER_DOLLAR) / CENTS_PER_DOLLAR;
+
+ 		const centre = findCentre(offering.centreId);
+ 		rows.push(
+diff --git a/test/parkboard.spec.ts b/test/parkboard.spec.ts
+index 83798ec..78a83e3 100644
+--- a/test/parkboard.spec.ts
++++ b/test/parkboard.spec.ts
+@@ -168,6 +168,12 @@
+
+ 	it("Test 33: pads a column", () => {
+ 		expect(pad("ab", 5)).to.equal("ab   ");
++	});
++
++	it("Test 33b: quotes the price a customer will actually be invoiced", () => {
++		const quoted = search("id", "is", "FT-110-A", { resident: true })[0];
++		const invoiced = priceFor(offering("FT-110-A"), customer("c09"));
++		expect(quoted).to.contain("$" + invoiced.toFixed(2));
+ 	});
+ });
+
