@@ -1,0 +1,100 @@
+commit 732ce4cf612d29c682bf0b53313067c0b5ba2542
+Author: b <a@b>
+Date:   Tue Sep 29 11:00:00 2026 -0700
+
+    REFACTOR-0009: pull the status rules out of printStatus
+
+    TEST-0009 listed the status command's tests but couldn't write any of
+    them: printStatus() reads the day from the clock and prints its answer
+    instead of returning it.
+
+    Extracts messageFor(offeringId, today): the same rules, but it is
+    handed the day instead of reading the clock, and it returns the message
+    instead of printing it. printStatus() is left doing only the two things
+    a test still can't control: asking the clock for today, and printing.
+
+    Fills in TEST-0009's tests against messageFor, each picking the day it
+    needs.
+
+diff --git a/src/desk.ts b/src/desk.ts
+index b8df73c..d6e6185 100644
+--- a/src/desk.ts
++++ b/src/desk.ts
+@@ -13,21 +13,17 @@ const SEASON_STARTS: Record<string, string> = {
+ const MS_PER_DAY = 24 * 60 * 60 * 1000;
+ const LAST_CALL_DAYS = 7;
+ 
+-export function printStatus(offeringId: string): void {
++export function messageFor(offeringId: string, today: Date): string {
+ 	const offering = findOffering(offeringId);
+-	if (offering === undefined) {
+-		console.log(`no offering '${offeringId}'`);
+-		return;
+-	}
++	if (offering === undefined) return `no offering '${offeringId}'`;
++
++	const daysLeft = Math.ceil((Date.parse(SEASON_STARTS[offering.season]) - today.getTime()) / MS_PER_DAY);
++	if (daysLeft <= 0) return `${offering.id} has already started`;
++	if (offering.isFull()) return `${offering.id} is full`;
++	if (daysLeft <= LAST_CALL_DAYS) return `${offering.id} starts in ${daysLeft} days — register now`;
++	return `${offering.id} is open`;
++}
+ 
+-	const daysLeft = Math.ceil((Date.parse(SEASON_STARTS[offering.season]) - Date.now()) / MS_PER_DAY);
+-	if (daysLeft <= 0) {
+-		console.log(`${offering.id} has already started`);
+-	} else if (offering.isFull()) {
+-		console.log(`${offering.id} is full`);
+-	} else if (daysLeft <= LAST_CALL_DAYS) {
+-		console.log(`${offering.id} starts in ${daysLeft} days — register now`);
+-	} else {
+-		console.log(`${offering.id} is open`);
+-	}
++export function printStatus(offeringId: string): void {
++	console.log(messageFor(offeringId, new Date()));
+ }
+diff --git a/test/desk.spec.ts b/test/desk.spec.ts
+index 406c2df..499ba4d 100644
+--- a/test/desk.spec.ts
++++ b/test/desk.spec.ts
+@@ -2,15 +2,34 @@ import { expect } from "chai";
+ import * as desk from "../src/desk";
+ 
+ describe("printStatus", () => {
+-	it("S1: reports an unknown offering");
++	// messageFor takes the day as an argument, so each test picks the day it needs.
++	// FT-110-B and SK-130-B both run in Winter, which starts 2026-12-01.
++	it("S1: reports an unknown offering", () => {
++		expect(desk.messageFor("ZZ-999-A", new Date("2026-09-29"))).to.equal("no offering 'ZZ-999-A'");
++	});
+ 
+-	it("S2: reports an offering that has already started");
++	it("S2: reports an offering that has already started", () => {
++		// FT-110-B: 4 of 10 registered; 9 days after Winter starts
++		expect(desk.messageFor("FT-110-B", new Date("2026-12-10"))).to.equal("FT-110-B has already started");
++	});
+ 
+-	it("S3: reports a full offering");
++	it("S3: reports a full offering", () => {
++		// SK-130-B: 8 of 8 registered, 3 waiting; 63 days before Winter starts
++		expect(desk.messageFor("SK-130-B", new Date("2026-09-29"))).to.equal("SK-130-B is full");
++	});
+ 
+-	it("S4: reports an open offering");
++	it("S4: reports an open offering", () => {
++		// FT-110-B: 4 of 10 registered; 63 days before Winter starts
++		expect(desk.messageFor("FT-110-B", new Date("2026-09-29"))).to.equal("FT-110-B is open");
++	});
+ 
+-	it("S5: warns when an offering starts within a week");
++	it("S5: warns when an offering starts within a week", () => {
++		// FT-110-B: 4 of 10 registered; 7 days before Winter starts
++		expect(desk.messageFor("FT-110-B", new Date("2026-11-24"))).to.equal("FT-110-B starts in 7 days — register now");
++	});
+ 
+-	it("S6: does not warn eight days out");
++	it("S6: does not warn eight days out", () => {
++		// FT-110-B: 4 of 10 registered; 8 days before Winter starts
++		expect(desk.messageFor("FT-110-B", new Date("2026-11-23"))).to.equal("FT-110-B is open");
++	});
+ });

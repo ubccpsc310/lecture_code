@@ -1,0 +1,39 @@
+commit 2b2a2fff2b2e0729ad3e95b4720500840e0a339b
+Author: b <a@b>
+Date:   Tue Sep 29 10:40:00 2026 -0700
+
+    TEST-0009: list the tests the status command needs
+
+    FEAT-0005 shipped the front desk's status command with no tests. These
+    are the cases it needs: one for each of its five outcomes, plus the
+    other side of the one-week boundary.
+
+    None of them has a body yet, because none can be written against
+    printStatus() as it stands. It works out the days left from Date.now(),
+    so a test can only reach whichever outcome today happens to land on
+    (nothing starts within a week of today, so S5 can't be reached at all).
+    And it returns nothing, so even a test that reaches an outcome has
+    nothing to check unless it catches console.log.
+
+diff --git a/test/desk.spec.ts b/test/desk.spec.ts
+index 2d88c7a..406c2df 100644
+--- a/test/desk.spec.ts
++++ b/test/desk.spec.ts
+@@ -1,4 +1,16 @@
+ import { expect } from "chai";
+ import * as desk from "../src/desk";
+ 
+-describe("printStatus", () => {});
++describe("printStatus", () => {
++	it("S1: reports an unknown offering");
++
++	it("S2: reports an offering that has already started");
++
++	it("S3: reports a full offering");
++
++	it("S4: reports an open offering");
++
++	it("S5: warns when an offering starts within a week");
++
++	it("S6: does not warn eight days out");
++});

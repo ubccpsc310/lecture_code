@@ -1,0 +1,19 @@
+{
+	"extends": "@tsconfig/node24/tsconfig.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"types": ["node", "mocha"],
+		"noImplicitAny": true,
+		"removeComments": true,
+		"preserveConstEnums": true,
+		"sourceMap": true
+	},
+	"include": [
+		"**/src/**/*.ts",
+		"**/test/**/*.ts"
+	],
+	"exclude": [
+		"**/node_modules",
+		"**/dist"
+	]
+}

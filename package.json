@@ -1,0 +1,29 @@
+{
+	"name": "cpsc310-lecture-code",
+	"description": "CPSC 310 lecture code. Run scripts from inside a project directory (one with src/ and test/).",
+	"private": true,
+	"version": "0.2.0",
+	"engines": {
+		"node": ">= 24 < 25"
+	},
+	"devDependencies": {
+		"@tsconfig/node24": "24.0.1",
+		"@types/chai": "4.3.0",
+		"@types/mocha": "10.0.10",
+		"@types/node": "24.3.0",
+		"chai": "4.3.4",
+		"mocha": "11.7.1",
+		"nyc": "17.1.0",
+		"prettier": "3.6.2",
+		"ts-node": "10.9.2",
+		"typescript": "5.9.2"
+	},
+	"scripts": {
+		"cover": "cd \"$INIT_CWD\" && nyc --reporter text --reporter html mocha",
+		"build": "node scripts/typecheck.mjs && yarn prettier:check",
+		"test": "cd \"$INIT_CWD\" && mocha",
+		"prettier:check": "cd \"$INIT_CWD\" && prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+		"prettier:fix": "cd \"$INIT_CWD\" && prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+		"start": "cd \"$INIT_CWD\" && ts-node src/main.ts"
+	}
+}
