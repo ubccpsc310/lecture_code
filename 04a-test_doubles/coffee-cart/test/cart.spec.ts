@@ -20,7 +20,11 @@ describe("buyCoffee", () => {
 		charge = (n: number) => false;
 	}
 	class FakeWorkingReader implements IReader {
-		charge = (n: number) => true;
+		public charges: number[] = [];
+		charge = (n: number) => {
+			this.charges.push(n);
+			return true;
+		};
 	}
 
 	it("serves coffee when the card is charged", () => {
@@ -29,5 +33,11 @@ describe("buyCoffee", () => {
 
 	it("refuses when the card is declined", () => {
 		expect(buyCoffee(new FakeFaultyReader(), 4.5, "decaf")).to.equal("card declined");
+	});
+
+	it("passes in correct details to the reader", () => {
+		const reader = new FakeWorkingReader();
+		buyCoffee(reader, 4.5, "iced");
+		expect(reader.charges[0]).to.equal(4.5 + 0.5);
 	});
 });
