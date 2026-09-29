@@ -1,0 +1,31 @@
+In order to test that we are passing the correct parameters to Reader,
+we need to add in some instrumentation to our test doubles.
+
+diff --git a/04a-test_doubles/coffee-cart/test/cart.spec.ts b/04a-test_doubles/coffee-cart/test/cart.spec.ts
+index 09e1216..286533b 100644
+--- a/04a-test_doubles/coffee-cart/test/cart.spec.ts
++++ b/04a-test_doubles/coffee-cart/test/cart.spec.ts
+@@ -20,7 +20,11 @@ describe("buyCoffee", () => {
+ 		charge = (n: number) => false;
+ 	}
+ 	class FakeWorkingReader implements IReader {
+-		charge = (n: number) => true;
++		public charges: number[] = [];
++		charge = (n: number) => {
++			this.charges.push(n);
++			return true;
++		};
+ 	}
+ 
+ 	it("serves coffee when the card is charged", () => {
+@@ -30,4 +34,10 @@ describe("buyCoffee", () => {
+ 	it("refuses when the card is declined", () => {
+ 		expect(buyCoffee(new FakeFaultyReader(), 4.5, "decaf")).to.equal("card declined");
+ 	});
++
++	it("passes in correct details to the reader", () => {
++		const reader = new FakeWorkingReader();
++		buyCoffee(reader, 4.5, "iced");
++		expect(reader.charges[0]).to.equal(4.5 + 0.5);
++	});
+ });

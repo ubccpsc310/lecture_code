@@ -1,38 +1,14 @@
-commit b2dffd2bde9543b5395531d8139f93eab9d70393
-Author: b <a@b>
-Date:   Tue Oct 6 10:30:00 2026 -0700
+Is this an ok implementation of our test double?
 
-    The declining double declines instead of throwing
-    
-    The CardReader contract says who is wrong. A card that can't be charged
-    comes back false, and charge() never throws. buyCoffee() already handles
-    false. The double broke the contract, so the fix goes in the double.
-    
-    The compiler didn't catch it. It checks that the double has a charge()
-    that returns a boolean, not what charge() does. A double only stands in
-    for the real reader if it keeps the contract every CardReader guarantees.
-    That is Liskov substitution, applied to a test double. A double that
-    breaks it tests buyCoffee() against a card reader that can't exist.
-    
-    The tempting fix was in buyCoffee(): catch the exception and call it a
-    decline. The test would pass, but buyCoffee() would then be written for
-    that impossible card reader, and any real bug inside charge() would
-    reach the customer as "card declined".
-
-diff --git a/test/cart.spec.ts b/test/cart.spec.ts
-index 6965c37..8b76e80 100644
---- a/test/cart.spec.ts
-+++ b/test/cart.spec.ts
-@@ -3,11 +3,7 @@ import { buyCoffee, CardReader } from "../src/cart";
- 
- // stand-ins for the bank: each always gives the same answer
- const approving: CardReader = { charge: () => true };
--const declining: CardReader = {
--	charge: () => {
--		throw new Error("card declined");
--	},
--};
-+const declining: CardReader = { charge: () => false };
- 
- describe("buyCoffee", () => {
- 	it("serves coffee when the card is charged", () => {
+diff --git a/04a-test_doubles/coffee-cart/test/cart.spec.ts b/04a-test_doubles/coffee-cart/test/cart.spec.ts
+index 286533b..695394c 100644
+--- a/04a-test_doubles/coffee-cart/test/cart.spec.ts
++++ b/04a-test_doubles/coffee-cart/test/cart.spec.ts
+@@ -22,6 +22,7 @@ describe("buyCoffee", () => {
+ 	class FakeWorkingReader implements IReader {
+ 		public charges: number[] = [];
+ 		charge = (n: number) => {
++			if (n < 0) throw new Error("Invalid charge!");
+ 			this.charges.push(n);
+ 			return true;
+ 		};

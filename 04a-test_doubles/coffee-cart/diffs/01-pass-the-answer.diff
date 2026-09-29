@@ -1,59 +1,52 @@
-commit e1944288002a51c0bbad33d872f92482c5bf6418
-Author: b <a@b>
-Date:   Tue Oct 6 10:10:00 2026 -0700
+Extracting the price calculation logic allows us to test the
+core logic of buyCoffee, but we still cannot test our charging
+behaviour: that we are returning the correct values if a charge
+is approved or declined!
 
-    Pass in the answer, like we passed in today
-    
-    The tests couldn't choose what the bank says: buyCoffee() makes its own
-    BankCardReader, and the bank approves or declines at random. It's the
-    same problem as printStatus() reading the clock, so this tries the same
-    fix. buyCoffee() is handed the answer instead of asking for it.
-    
-    The tests now pass every run. But look at what moved: buyCoffee() no
-    longer charges anything. Charging 450 cents is now main's job, and every
-    caller has to remember to do it, with the right amount, before calling
-    buyCoffee(). That part is exactly as untestable as before; it just
-    isn't in buyCoffee() any more.
-    
-    We wanted to control the bank's answer without taking away the charge.
-
-diff --git a/src/cart.ts b/src/cart.ts
-index b05373c..f9fe7da 100644
---- a/src/cart.ts
-+++ b/src/cart.ts
-@@ -1,6 +1,3 @@
--import { BankCardReader } from "./bank";
--
--export function buyCoffee(): string {
+diff --git a/04a-test_doubles/coffee-cart/src/cart.ts b/04a-test_doubles/coffee-cart/src/cart.ts
+index c5e887a..0b6fafb 100644
+--- a/04a-test_doubles/coffee-cart/src/cart.ts
++++ b/04a-test_doubles/coffee-cart/src/cart.ts
+@@ -1,9 +1,14 @@
+ import { BankCardReader } from "./bank";
+ 
+-export function buyCoffee(price: number, modification?: string): string {
 -	const reader = new BankCardReader();
--	return reader.charge(450) ? "enjoy your coffee" : "card declined";
-+export function buyCoffee(charged: boolean): string {
-+	return charged ? "enjoy your coffee" : "card declined";
+-	let priceToCharge = price;
++export function getPrice(initialPrice: number, modification?: string): number {
++	let priceToCharge = initialPrice;
+ 	if (modification === "decaf") priceToCharge += 1.0;
+ 	else if (modification === "iced") priceToCharge += 0.5;
++	return priceToCharge;
++}
++
++export function buyCoffee(price: number, modification?: string): string {
++	const reader = new BankCardReader();
++	const priceToCharge = getPrice(price, modification);
+ 	return reader.charge(priceToCharge) ? "enjoy your coffee" : "card declined";
  }
-diff --git a/src/main.ts b/src/main.ts
-index f2478ad..397752d 100644
---- a/src/main.ts
-+++ b/src/main.ts
-@@ -1,3 +1,4 @@
- import { buyCoffee } from "./cart";
-+import { BankCardReader } from "./bank";
+diff --git a/04a-test_doubles/coffee-cart/test/cart.spec.ts b/04a-test_doubles/coffee-cart/test/cart.spec.ts
+index 68647fb..52e6e0d 100644
+--- a/04a-test_doubles/coffee-cart/test/cart.spec.ts
++++ b/04a-test_doubles/coffee-cart/test/cart.spec.ts
+@@ -1,6 +1,19 @@
+ import { expect } from "chai";
+-import { buyCoffee } from "../src/cart";
++import { buyCoffee, getPrice } from "../src/cart";
  
--console.log(buyCoffee());
-+console.log(buyCoffee(new BankCardReader().charge(450)));
-diff --git a/test/cart.spec.ts b/test/cart.spec.ts
-index 1bff0cc..899adc0 100644
---- a/test/cart.spec.ts
-+++ b/test/cart.spec.ts
-@@ -3,10 +3,10 @@ import { buyCoffee } from "../src/cart";
- 
++describe("getPrice", () => {
++	it("adds $1 for decaf", () => {
++		expect(getPrice(2, "decaf")).to.equal(3);
++	});
++	it("adds $0.5 for iced", () => {
++		expect(getPrice(2, "decaf")).to.equal(2.5);
++	});
++	it("returns same price with no mods", () => {
++		expect(getPrice(2)).to.equal(2);
++	});
++});
++
++// we still can't test the actual charging of the coffee though...
  describe("buyCoffee", () => {
  	it("serves coffee when the card is charged", () => {
--		expect(buyCoffee()).to.equal("enjoy your coffee");
-+		expect(buyCoffee(true)).to.equal("enjoy your coffee");
- 	});
- 
- 	it("refuses when the card is declined", () => {
--		expect(buyCoffee()).to.equal("card declined");
-+		expect(buyCoffee(false)).to.equal("card declined");
- 	});
- });
+ 		expect(buyCoffee(4.5, "iced")).to.equal("enjoy your coffee");
