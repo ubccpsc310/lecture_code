@@ -22,6 +22,7 @@ describe("buyCoffee", () => {
 	class FakeWorkingReader implements IReader {
 		public charges: number[] = [];
 		charge = (n: number) => {
+			if (n < 0) throw new Error("Invalid charge!");
 			this.charges.push(n);
 			return true;
 		};
