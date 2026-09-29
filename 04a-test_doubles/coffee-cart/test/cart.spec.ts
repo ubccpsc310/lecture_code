@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { buyCoffee, getPrice } from "../src/cart";
+import { IReader } from "../src/reader";
 
 describe("getPrice", () => {
 	it("adds $1 for decaf", () => {
@@ -15,11 +16,18 @@ describe("getPrice", () => {
 
 // we still can't test the actual charging of the coffee though...
 describe("buyCoffee", () => {
+	class FakeFaultyReader implements IReader {
+		charge = (n: number) => false;
+	}
+	class FakeWorkingReader implements IReader {
+		charge = (n: number) => true;
+	}
+
 	it("serves coffee when the card is charged", () => {
-		expect(buyCoffee(4.5, "iced")).to.equal("enjoy your coffee");
+		expect(buyCoffee(new FakeWorkingReader(), 4.5, "iced")).to.equal("enjoy your coffee");
 	});
 
 	it("refuses when the card is declined", () => {
-		expect(buyCoffee(4.5, "decaf")).to.equal("card declined");
+		expect(buyCoffee(new FakeFaultyReader(), 4.5, "decaf")).to.equal("card declined");
 	});
 });
