@@ -1,0 +1,5 @@
+SKU,Album_Title,Performer,Release_Year,Runtime,Category
+INV-001,"Abbey Road","The Beatles",1969,"48:17",Rock
+INV-002,"Rumours","Fleetwood Mac",1977,"39:43","Soft Rock"
+INV-003,"Thriller","Michael Jackson",1982,"42:16",Pop
+INV-004,"Born to Run","Bruce Springsteen",1975,"39:25",Rock

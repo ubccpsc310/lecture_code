@@ -1,0 +1,14 @@
+{
+  "name": "music-store-before",
+  "version": "1.0.0",
+  "description": "Music store app — BEFORE refactoring to the Adapter pattern",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
+  }
+}

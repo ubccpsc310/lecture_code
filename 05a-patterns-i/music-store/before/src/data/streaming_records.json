@@ -1,0 +1,46 @@
+[
+  {
+    "record_id": "stream-001",
+    "title": "Abbey Road",
+    "artist_name": "The Beatles",
+    "released_on": "1969-09-26",
+    "duration_ms": 2897000,
+    "metadata": {
+      "primary_genre": "Rock",
+      "secondary_genres": ["Classic Rock", "Pop Rock"]
+    }
+  },
+  {
+    "record_id": "stream-002",
+    "title": "Dark Side of the Moon",
+    "artist_name": "Pink Floyd",
+    "released_on": "1973-03-01",
+    "duration_ms": 2580000,
+    "metadata": {
+      "primary_genre": "Progressive Rock",
+      "secondary_genres": ["Psychedelic Rock", "Art Rock"]
+    }
+  },
+  {
+    "record_id": "stream-003",
+    "title": "Rumours",
+    "artist_name": "Fleetwood Mac",
+    "released_on": "1977-02-04",
+    "duration_ms": 2383000,
+    "metadata": {
+      "primary_genre": "Soft Rock",
+      "secondary_genres": ["Pop Rock", "Pop"]
+    }
+  },
+  {
+    "record_id": "stream-004",
+    "title": "Thriller",
+    "artist_name": "Michael Jackson",
+    "released_on": "1982-11-30",
+    "duration_ms": 2536000,
+    "metadata": {
+      "primary_genre": "Pop",
+      "secondary_genres": ["R&B", "Funk", "Rock"]
+    }
+  }
+]
