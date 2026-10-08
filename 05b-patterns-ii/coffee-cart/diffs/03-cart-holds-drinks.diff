@@ -1,0 +1,117 @@
+commit 44c0cb44b1320e834485198a3eac40385f7bcc98
+Author: b <a@b>
+Date:   Wed Oct 7 14:05:19 2026 -0700
+
+    REFACTOR-0003: the cart holds Drinks, not names and add-on strings
+    
+    CoffeeCart looked up each drink by name and kept its add-ons as
+    strings, so it had to know every add-on to price or describe an item.
+    It now holds a Drink[] and asks each one for its description and price,
+    without knowing whether it's a plain menu drink or one wrapped in add-ons.
+    
+    main.ts builds each drink by wrapping a MenuDrink in its add-ons, inside
+    out: Whip(Large(Cold Brew)) is a large cold brew with whip. It is the one
+    place that names the add-ons.
+    
+    The output is unchanged.
+
+diff --git a/src/cart.ts b/src/cart.ts
+index 49da476..6d42f18 100644
+--- a/src/cart.ts
++++ b/src/cart.ts
+@@ -1,69 +1,25 @@
+-import { MENU } from "./menu";
+-
+-type OrderItem = { name: string; priceCents: number; addOns: string[] };
++import { Drink } from "./Drink";
+ 
+ const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+ 
+ export class CoffeeCart {
+-	private items: OrderItem[] = [];
++	private drinks: Drink[] = [];
+ 
+-	addDrink(name: string, addOns: string[] = []): void {
+-		const item = MENU.find((m) => m.name === name);
+-		if (!item) throw new Error(`"${name}" is not on the menu`);
+-		this.items.push({ name: item.name, priceCents: item.priceCents, addOns });
++	addDrink(drink: Drink): void {
++		this.drinks.push(drink);
+ 	}
+ 
+ 	getTotal(): number {
+-		return this.items.reduce((sum, item) => sum + this.priceOf(item), 0);
++		return this.drinks.reduce((sum, drink) => sum + drink.getPriceCents(), 0);
+ 	}
+ 
+ 	printReceipt(): void {
+ 		console.log("┌─── RECEIPT ─────────────────────────────────┐");
+-		for (const item of this.items) {
+-			console.log(`│  ${this.describe(item).padEnd(34)} ${dollars(this.priceOf(item)).padStart(6)}  │`);
++		for (const drink of this.drinks) {
++			console.log(`│  ${drink.getDescription().padEnd(34)} ${dollars(drink.getPriceCents()).padStart(6)}  │`);
+ 		}
+ 		console.log("├─────────────────────────────────────────────┤");
+ 		console.log(`│  ${"TOTAL".padEnd(34)} ${dollars(this.getTotal()).padStart(6)}  │`);
+ 		console.log("└─────────────────────────────────────────────┘");
+ 	}
+-
+-	private priceOf(item: OrderItem): number {
+-		let price = item.priceCents;
+-		for (const addOn of item.addOns) {
+-			switch (addOn) {
+-				case "extra shot":
+-					price += 100;
+-					break;
+-				case "whip":
+-					price += 50;
+-					break;
+-				case "large":
+-					price = Math.round(price * 1.5);
+-					break;
+-				default:
+-					throw new Error(`"${addOn}" is not an add-on`);
+-			}
+-		}
+-		return price;
+-	}
+-
+-	private describe(item: OrderItem): string {
+-		let description = item.name;
+-		for (const addOn of item.addOns) {
+-			switch (addOn) {
+-				case "extra shot":
+-					description += " + extra shot";
+-					break;
+-				case "whip":
+-					description += " + whip";
+-					break;
+-				case "large":
+-					description = "Large " + description;
+-					break;
+-				default:
+-					throw new Error(`"${addOn}" is not an add-on`);
+-			}
+-		}
+-		return description;
+-	}
+ }
+diff --git a/src/main.ts b/src/main.ts
+index 105a47d..a2b3bf1 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -1,8 +1,10 @@
+ import { CoffeeCart } from "./cart";
++import { MenuDrink } from "./menu";
++import { ExtraShot, Large, Whip } from "./addOns";
+ 
+ const cart = new CoffeeCart();
+-cart.addDrink("Espresso");
+-cart.addDrink("Latte", ["extra shot"]);
+-cart.addDrink("Cold Brew", ["large", "whip"]);
+-cart.addDrink("Matcha Latte", ["whip", "whip"]);
++cart.addDrink(new MenuDrink("Espresso"));
++cart.addDrink(new ExtraShot(new MenuDrink("Latte")));
++cart.addDrink(new Whip(new Large(new MenuDrink("Cold Brew"))));
++cart.addDrink(new Whip(new Whip(new MenuDrink("Matcha Latte"))));
+ cart.printReceipt();

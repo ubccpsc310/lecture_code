@@ -1,0 +1,108 @@
+commit 4e15fd5ab6650ba83f36bae5c52b6abc0ac84b56
+Author: b <a@b>
+Date:   Mon Oct 5 20:46:28 2026 -0700
+
+    REFACTOR-0002: every role implements Employee
+    
+    Each single-person role answers for themself: its total salary is its
+    own, and its headcount is 1. Manager already answers all three
+    questions, so it only needs to say so.
+    
+    Manager still keeps one array per role and still loops over each one,
+    so nothing asks a role these questions through Employee yet.
+
+diff --git a/src/Manager.ts b/src/Manager.ts
+index 558dd9b..60e062a 100644
+--- a/src/Manager.ts
++++ b/src/Manager.ts
+@@ -1,6 +1,7 @@
++import { Employee } from "./Employee";
+ import { Designer, Engineer, ProjectManager, TechLead } from "./roles";
+ 
+-export class Manager {
++export class Manager implements Employee {
+ 	managers: Manager[] = [];
+ 	engineers: Engineer[] = [];
+ 	designers: Designer[] = [];
+diff --git a/src/roles.ts b/src/roles.ts
+index a16c181..5a23787 100644
+--- a/src/roles.ts
++++ b/src/roles.ts
+@@ -1,4 +1,6 @@
+-export class Engineer {
++import { Employee } from "./Employee";
++
++export class Engineer implements Employee {
+ 	constructor(
+ 		public name: string,
+ 		public salary: number
+@@ -7,9 +9,17 @@ export class Engineer {
+ 	traverse(depth: number = 0) {
+ 		console.log("  ".repeat(depth) + `[Engineer] ${this.name}`);
+ 	}
++
++	getTotalSalary(): number {
++		return this.salary;
++	}
++
++	getHeadcount(): number {
++		return 1;
++	}
+ }
+ 
+-export class Designer {
++export class Designer implements Employee {
+ 	constructor(
+ 		public name: string,
+ 		public salary: number
+@@ -18,9 +28,17 @@ export class Designer {
+ 	traverse(depth: number = 0) {
+ 		console.log("  ".repeat(depth) + `[Designer] ${this.name}`);
+ 	}
++
++	getTotalSalary(): number {
++		return this.salary;
++	}
++
++	getHeadcount(): number {
++		return 1;
++	}
+ }
+ 
+-export class ProjectManager {
++export class ProjectManager implements Employee {
+ 	constructor(
+ 		public name: string,
+ 		public salary: number
+@@ -29,9 +47,17 @@ export class ProjectManager {
+ 	traverse(depth: number = 0) {
+ 		console.log("  ".repeat(depth) + `[ProjectManager] ${this.name}`);
+ 	}
++
++	getTotalSalary(): number {
++		return this.salary;
++	}
++
++	getHeadcount(): number {
++		return 1;
++	}
+ }
+ 
+-export class TechLead {
++export class TechLead implements Employee {
+ 	constructor(
+ 		public name: string,
+ 		public salary: number
+@@ -40,4 +66,12 @@ export class TechLead {
+ 	traverse(depth: number = 0) {
+ 		console.log("  ".repeat(depth) + `[TechLead] ${this.name}`);
+ 	}
++
++	getTotalSalary(): number {
++		return this.salary;
++	}
++
++	getHeadcount(): number {
++		return 1;
++	}
+ }

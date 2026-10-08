@@ -1,0 +1,92 @@
+commit 60baf92f22e7e029ede5d77b86b2904c15f491fd
+Author: b <a@b>
+Date:   Wed Oct 7 14:04:58 2026 -0700
+
+    REFACTOR-0002: menu drinks and add-ons are Drinks
+    
+    MenuDrink answers from the menu. Each add-on is a class that wraps
+    another Drink and answers by changing that drink's answer: ExtraShot
+    and Whip add to the end, and Large multiplies the price and goes in
+    front of the name. AddOn holds the wrapped drink, so every add-on can
+    wrap any Drink, including another add-on.
+    
+    Everything an add-on does is now in one class, instead of split
+    between two switches. The cart doesn't use any of it yet.
+
+diff --git a/src/addOns.ts b/src/addOns.ts
+new file mode 100644
+index 0000000..9328de2
+--- /dev/null
++++ b/src/addOns.ts
+@@ -0,0 +1,39 @@
++import { Drink } from "./Drink";
++
++/** Wraps a drink, and answers by changing the wrapped drink's answer. */
++export abstract class AddOn implements Drink {
++	constructor(protected drink: Drink) {}
++
++	abstract getDescription(): string;
++	abstract getPriceCents(): number;
++}
++
++export class ExtraShot extends AddOn {
++	getDescription(): string {
++		return this.drink.getDescription() + " + extra shot";
++	}
++
++	getPriceCents(): number {
++		return this.drink.getPriceCents() + 100;
++	}
++}
++
++export class Whip extends AddOn {
++	getDescription(): string {
++		return this.drink.getDescription() + " + whip";
++	}
++
++	getPriceCents(): number {
++		return this.drink.getPriceCents() + 50;
++	}
++}
++
++export class Large extends AddOn {
++	getDescription(): string {
++		return "Large " + this.drink.getDescription();
++	}
++
++	getPriceCents(): number {
++		return Math.round(this.drink.getPriceCents() * 1.5);
++	}
++}
+diff --git a/src/menu.ts b/src/menu.ts
+index 10f9183..a650334 100644
+--- a/src/menu.ts
++++ b/src/menu.ts
+@@ -1,3 +1,5 @@
++import { Drink } from "./Drink";
++
+ export type MenuItem = {
+ 	name: string;
+ 	priceCents: number;
+@@ -9,3 +11,21 @@ export const MENU: MenuItem[] = [
+ 	{ name: "Cold Brew", priceCents: 550 },
+ 	{ name: "Matcha Latte", priceCents: 600 },
+ ];
++
++export class MenuDrink implements Drink {
++	private item: MenuItem;
++
++	constructor(name: string) {
++		const item = MENU.find((m) => m.name === name);
++		if (!item) throw new Error(`"${name}" is not on the menu`);
++		this.item = item;
++	}
++
++	getDescription(): string {
++		return this.item.name;
++	}
++
++	getPriceCents(): number {
++		return this.item.priceCents;
++	}
++}

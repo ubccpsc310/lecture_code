@@ -1,0 +1,59 @@
+commit 83c1eecbb6556fa49998f3fb00cee14cd594af1c
+Author: b <a@b>
+Date:   Mon Oct 5 20:46:28 2026 -0700
+
+    FEAT-0001: add a DataScientist role
+    
+    DataScientist is one more kind of single person: it implements Employee
+    the same way the other roles do, and Grace now has one on her team.
+    
+    Manager didn't change. Before, a new role meant a new array in Manager
+    plus a new loop in traverse(), getTotalSalary() and getHeadcount().
+
+diff --git a/src/index.ts b/src/index.ts
+index 0192608..89df480 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -1,6 +1,6 @@
+ import { Employee } from "./Employee";
+ import { Manager } from "./Manager";
+-import { Designer, Engineer, ProjectManager, TechLead } from "./roles";
++import { DataScientist, Designer, Engineer, ProjectManager, TechLead } from "./roles";
+ 
+ const cto = new Manager("CTO", 200);
+ 
+@@ -13,6 +13,7 @@ alice.add(new Designer("Ethan", 130));
+ const grace = new Manager("Grace", 140);
+ grace.add(new Designer("Henry", 105));
+ grace.add(new Designer("Isabel", 130));
++grace.add(new DataScientist("Jasmine", 150));
+ 
+ const frank = new ProjectManager("Frank", 130);
+ 
+diff --git a/src/roles.ts b/src/roles.ts
+index 527cefd..f20139a 100644
+--- a/src/roles.ts
++++ b/src/roles.ts
+@@ -75,3 +75,22 @@ export class TechLead implements Employee {
+ 		return 1;
+ 	}
+ }
++
++export class DataScientist implements Employee {
++	constructor(
++		public name: string,
++		private salary: number
++	) {}
++
++	traverse(depth: number = 0) {
++		console.log("  ".repeat(depth) + `[DataScientist] ${this.name}`);
++	}
++
++	getTotalSalary(): number {
++		return this.salary;
++	}
++
++	getHeadcount(): number {
++		return 1;
++	}
++}

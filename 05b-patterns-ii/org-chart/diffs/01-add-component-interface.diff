@@ -1,0 +1,28 @@
+commit 3aa7cb10e38cf3c0fa7b7439cc8452530e320677
+Author: b <a@b>
+Date:   Mon Oct 5 20:46:27 2026 -0700
+
+    REFACTOR-0001: add the Employee component interface
+    
+    Comparing Manager's loops, every role gets asked the same three things:
+    print yourself, what do you cost, how many people are you. Only the
+    answers differ. A single person answers for themself, and a manager
+    answers for themself plus everyone under them.
+    
+    Employee is those three questions. A single person and a whole team
+    can both be one.
+    
+    Nothing uses it yet.
+
+diff --git a/src/Employee.ts b/src/Employee.ts
+new file mode 100644
+index 0000000..27b07dc
+--- /dev/null
++++ b/src/Employee.ts
+@@ -0,0 +1,6 @@
++/** Anyone in the org chart: one person, or a manager along with everyone under them. */
++export interface Employee {
++	traverse(depth: number): void;
++	getTotalSalary(): number;
++	getHeadcount(): number;
++}

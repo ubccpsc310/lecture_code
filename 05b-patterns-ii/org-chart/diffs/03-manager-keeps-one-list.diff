@@ -1,0 +1,148 @@
+commit 05af88bb266dfdb262d3897c897c0d50138c1cb0
+Author: b <a@b>
+Date:   Mon Oct 5 20:46:28 2026 -0700
+
+    REFACTOR-0003: Manager keeps one list of Employees
+    
+    Manager kept one array per role and looped over each one in every
+    operation, so adding a role meant a new array and a new loop in every
+    operation. It now keeps one Employee[] and asks each report the same
+    question, whether that report is one person or a manager with a team of
+    their own. The recursion that only the managers' loop had is now just
+    what a Manager's answer is.
+    
+    Because Manager asks its reports for getTotalSalary() instead of reading
+    their salary field, salary is now private. Reports are added with add()
+    rather than pushed onto a per-role array, so the chart also prints them
+    in the order they were added, not grouped by role.
+
+diff --git a/src/Manager.ts b/src/Manager.ts
+index 60e062a..9d096fe 100644
+--- a/src/Manager.ts
++++ b/src/Manager.ts
+@@ -1,44 +1,31 @@
+ import { Employee } from "./Employee";
+-import { Designer, Engineer, ProjectManager, TechLead } from "./roles";
+ 
+ export class Manager implements Employee {
+-	managers: Manager[] = [];
+-	engineers: Engineer[] = [];
+-	designers: Designer[] = [];
+-	projectManagers: ProjectManager[] = [];
+-	techLeads: TechLead[] = [];
++	private reports: Employee[] = [];
+ 
+ 	constructor(
+ 		public name: string,
+-		public salary: number
++		private salary: number
+ 	) {}
+ 
++	add(report: Employee): void {
++		this.reports.push(report);
++	}
++
+ 	traverse(depth: number = 0) {
+ 		console.log("  ".repeat(depth) + `[Manager] ${this.name}`);
+-		for (const m of this.managers) m.traverse(depth + 1);
+-		for (const e of this.engineers) e.traverse(depth + 1);
+-		for (const d of this.designers) d.traverse(depth + 1);
+-		for (const pm of this.projectManagers) pm.traverse(depth + 1);
+-		for (const tl of this.techLeads) tl.traverse(depth + 1);
++		for (const report of this.reports) report.traverse(depth + 1);
+ 	}
+ 
+ 	getTotalSalary(): number {
+ 		let total = this.salary;
+-		for (const m of this.managers) total += m.getTotalSalary();
+-		for (const e of this.engineers) total += e.salary;
+-		for (const d of this.designers) total += d.salary;
+-		for (const pm of this.projectManagers) total += pm.salary;
+-		for (const tl of this.techLeads) total += tl.salary;
++		for (const report of this.reports) total += report.getTotalSalary();
+ 		return total;
+ 	}
+ 
+ 	getHeadcount(): number {
+ 		let count = 1;
+-		for (const m of this.managers) count += m.getHeadcount();
+-		for (const e of this.engineers) count += 1;
+-		for (const d of this.designers) count += 1;
+-		for (const pm of this.projectManagers) count += 1;
+-		for (const tl of this.techLeads) count += 1;
++		for (const report of this.reports) count += report.getHeadcount();
+ 		return count;
+ 	}
+ }
+diff --git a/src/index.ts b/src/index.ts
+index e339ebf..f0d6362 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -4,18 +4,18 @@ import { Designer, Engineer, ProjectManager, TechLead } from "./roles";
+ const cto = new Manager("CTO", 200);
+ 
+ const alice = new Manager("Alice", 180);
+-alice.engineers.push(new Engineer("Bob", 120));
+-alice.engineers.push(new Engineer("Carol", 110));
+-alice.techLeads.push(new TechLead("Deborah", 140));
+-alice.designers.push(new Designer("Ethan", 130));
++alice.add(new Engineer("Bob", 120));
++alice.add(new Engineer("Carol", 110));
++alice.add(new TechLead("Deborah", 140));
++alice.add(new Designer("Ethan", 130));
+ 
+ const grace = new Manager("Grace", 140);
+-grace.designers.push(new Designer("Henry", 105));
+-grace.designers.push(new Designer("Isabel", 130));
++grace.add(new Designer("Henry", 105));
++grace.add(new Designer("Isabel", 130));
+ 
+-cto.managers.push(alice);
+-cto.projectManagers.push(new ProjectManager("Frank", 130));
+-cto.managers.push(grace);
++cto.add(alice);
++cto.add(new ProjectManager("Frank", 130));
++cto.add(grace);
+ 
+ const fmt = (n: number) => `$${n.toLocaleString()}`;
+ 
+diff --git a/src/roles.ts b/src/roles.ts
+index 5a23787..527cefd 100644
+--- a/src/roles.ts
++++ b/src/roles.ts
+@@ -3,7 +3,7 @@ import { Employee } from "./Employee";
+ export class Engineer implements Employee {
+ 	constructor(
+ 		public name: string,
+-		public salary: number
++		private salary: number
+ 	) {}
+ 
+ 	traverse(depth: number = 0) {
+@@ -22,7 +22,7 @@ export class Engineer implements Employee {
+ export class Designer implements Employee {
+ 	constructor(
+ 		public name: string,
+-		public salary: number
++		private salary: number
+ 	) {}
+ 
+ 	traverse(depth: number = 0) {
+@@ -41,7 +41,7 @@ export class Designer implements Employee {
+ export class ProjectManager implements Employee {
+ 	constructor(
+ 		public name: string,
+-		public salary: number
++		private salary: number
+ 	) {}
+ 
+ 	traverse(depth: number = 0) {
+@@ -60,7 +60,7 @@ export class ProjectManager implements Employee {
+ export class TechLead implements Employee {
+ 	constructor(
+ 		public name: string,
+-		public salary: number
++		private salary: number
+ 	) {}
+ 
+ 	traverse(depth: number = 0) {

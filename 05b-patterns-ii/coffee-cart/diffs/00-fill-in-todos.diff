@@ -1,0 +1,38 @@
+commit b8f04ec30af2f55d735c4fa43b1a8a0dc4772d26
+Author: b <a@b>
+Date:   Wed Oct 7 14:04:42 2026 -0700
+
+    TODO-0001: fill in what large does to a drink
+    
+    Each add-on is a case in two switches: one in priceOf() and one in
+    describe(). So filling in large meant two edits in two methods, and
+    neither is like the others: extra shot and whip add to the end of the
+    price and description, while large multiplies the price and goes in
+    front of the name.
+    
+    Everything an add-on does is split between those two switches, and
+    CoffeeCart, which should only keep track of an order, holds the rules
+    for every add-on.
+
+diff --git a/src/cart.ts b/src/cart.ts
+index 6da631e..49da476 100644
+--- a/src/cart.ts
++++ b/src/cart.ts
+@@ -38,7 +38,7 @@ export class CoffeeCart {
+ 					price += 50;
+ 					break;
+ 				case "large":
+-					// TODO: A large drink costs 1.5 times as much, rounded to the nearest cent.
++					price = Math.round(price * 1.5);
+ 					break;
+ 				default:
+ 					throw new Error(`"${addOn}" is not an add-on`);
+@@ -58,7 +58,7 @@ export class CoffeeCart {
+ 					description += " + whip";
+ 					break;
+ 				case "large":
+-					// TODO: A large drink's description starts with "Large", e.g. "Large Latte".
++					description = "Large " + description;
+ 					break;
+ 				default:
+ 					throw new Error(`"${addOn}" is not an add-on`);

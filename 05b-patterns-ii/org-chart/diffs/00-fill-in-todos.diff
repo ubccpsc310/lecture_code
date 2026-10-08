@@ -1,0 +1,36 @@
+commit ae94344ef0802cd9ca2e4a1574238cba6d336b72
+Author: b <a@b>
+Date:   Mon Oct 5 20:46:27 2026 -0700
+
+    TODO-0001: count everyone under a manager's managers
+    
+    A manager's managers have reports of their own, so their loop can't
+    read a salary or add 1 the way the loops for every other role do: it
+    has to ask that manager for its own total, which recurses down the tree.
+    
+    Each operation now has five loops: one for managers, which recurses,
+    and four for the other roles, which are identical except for which
+    array they read.
+
+diff --git a/src/Manager.ts b/src/Manager.ts
+index 222ca07..558dd9b 100644
+--- a/src/Manager.ts
++++ b/src/Manager.ts
+@@ -23,7 +23,7 @@ export class Manager {
+ 
+ 	getTotalSalary(): number {
+ 		let total = this.salary;
+-		for (const m of this.managers) total += 12345; // TODO: Replace this placeholder. A manager's total salary is their own salary plus that of everyone who reports to them.
++		for (const m of this.managers) total += m.getTotalSalary();
+ 		for (const e of this.engineers) total += e.salary;
+ 		for (const d of this.designers) total += d.salary;
+ 		for (const pm of this.projectManagers) total += pm.salary;
+@@ -33,7 +33,7 @@ export class Manager {
+ 
+ 	getHeadcount(): number {
+ 		let count = 1;
+-		for (const m of this.managers) count += 12345; // TODO: Replace this placeholder. A manager's headcount is themself plus the headcount of everyone who reports to them.
++		for (const m of this.managers) count += m.getHeadcount();
+ 		for (const e of this.engineers) count += 1;
+ 		for (const d of this.designers) count += 1;
+ 		for (const pm of this.projectManagers) count += 1;

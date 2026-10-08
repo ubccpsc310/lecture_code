@@ -1,0 +1,48 @@
+commit cdfb79d30d3c64bb688d6987f86c07bc6a6101bd
+Author: b <a@b>
+Date:   Wed Oct 7 14:05:21 2026 -0700
+
+    FEAT-0001: add a mocha add-on
+    
+    Mocha is one more add-on: it wraps any Drink, adds $0.80, and adds
+    "+ mocha" to the description. It stacks with the other add-ons like
+    they stack with each other.
+    
+    CoffeeCart didn't change. Before, a new add-on meant a new case in both
+    switches in CoffeeCart.
+
+diff --git a/src/addOns.ts b/src/addOns.ts
+index 9328de2..fb1276f 100644
+--- a/src/addOns.ts
++++ b/src/addOns.ts
+@@ -37,3 +37,13 @@ export class Large extends AddOn {
+ 		return Math.round(this.drink.getPriceCents() * 1.5);
+ 	}
+ }
++
++export class Mocha extends AddOn {
++	getDescription(): string {
++		return this.drink.getDescription() + " + mocha";
++	}
++
++	getPriceCents(): number {
++		return this.drink.getPriceCents() + 80;
++	}
++}
+diff --git a/src/main.ts b/src/main.ts
+index a2b3bf1..7117b4d 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -1,10 +1,11 @@
+ import { CoffeeCart } from "./cart";
+ import { MenuDrink } from "./menu";
+-import { ExtraShot, Large, Whip } from "./addOns";
++import { ExtraShot, Large, Mocha, Whip } from "./addOns";
+ 
+ const cart = new CoffeeCart();
+ cart.addDrink(new MenuDrink("Espresso"));
+ cart.addDrink(new ExtraShot(new MenuDrink("Latte")));
+ cart.addDrink(new Whip(new Large(new MenuDrink("Cold Brew"))));
+ cart.addDrink(new Whip(new Whip(new MenuDrink("Matcha Latte"))));
++cart.addDrink(new Whip(new Mocha(new Large(new MenuDrink("Latte")))));
+ cart.printReceipt();

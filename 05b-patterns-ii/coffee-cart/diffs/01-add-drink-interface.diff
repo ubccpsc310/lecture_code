@@ -1,0 +1,27 @@
+commit 30e47673d31726d19eb4f3297046f3ff4cb860f4
+Author: b <a@b>
+Date:   Wed Oct 7 14:04:47 2026 -0700
+
+    REFACTOR-0001: add the Drink interface
+    
+    The cart asks two things of every order item: how should it appear on
+    the receipt, and what does it cost. A Latte answers from the menu, and
+    a Latte with an extra shot answers by asking the Latte and then adding
+    to the answer.
+    
+    Drink is those two questions. A plain menu drink and a drink with any
+    number of add-ons can both be one.
+    
+    Nothing uses it yet.
+
+diff --git a/src/Drink.ts b/src/Drink.ts
+new file mode 100644
+index 0000000..497a71d
+--- /dev/null
++++ b/src/Drink.ts
+@@ -0,0 +1,5 @@
++/** Anything the cart can sell: a drink from the menu, or one with add-ons. */
++export interface Drink {
++	getDescription(): string;
++	getPriceCents(): number;
++}
