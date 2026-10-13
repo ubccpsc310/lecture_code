@@ -1,0 +1,24 @@
+commit 601dafe9c216c14075059c07e988e45722d2c15b
+Author: b <a@b>
+Date:   Wed Oct 7 13:09:01 2026 -0700
+
+    REFACTOR-0001: add the PhoneState interface
+    
+    Reading down any one case label, the same three questions come up in
+    every state: what does Power do, what does Home do, what happens to a
+    notification. Only the answers differ by state.
+    
+    PhoneState is those three questions. Nothing uses it yet.
+
+diff --git a/src/PhoneState.ts b/src/PhoneState.ts
+new file mode 100644
+index 0000000..4fa4998
+--- /dev/null
++++ b/src/PhoneState.ts
+@@ -0,0 +1,6 @@
++/** What the phone does when a button is pressed or a notification arrives, in one state. */
++export interface PhoneState {
++	pressPower(): void;
++	pressHome(finger: string): void;
++	receiveNotification(app: string, text: string): void;
++}

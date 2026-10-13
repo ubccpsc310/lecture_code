@@ -1,0 +1,160 @@
+commit dda725f113664bb7f41fbe84865fe03ac848493b
+Author: b <a@b>
+Date:   Wed Oct 7 13:09:15 2026 -0700
+
+    REFACTOR-0002: Phone hands each event to its current state
+    
+    Phone switched over its state in every event, so adding a state meant a
+    new case in every method. Now OffState, LockedState and ReadyState each
+    take their own case from every switch, and Phone holds one PhoneState
+    and hands each event to it. Everything a locked phone does, including
+    when it stops being locked, is in one class.
+    
+    Each state is given the Phone it belongs to. A state moves the phone to
+    the next state by calling setState(), and LockedState asks the phone
+    whether it recognizes a finger. Phone never checks which state it's in,
+    and it doesn't name any state except the one it starts in.
+    
+    The output is unchanged.
+
+diff --git a/src/Phone.ts b/src/Phone.ts
+index 82d1f71..3a1795b 100644
+--- a/src/Phone.ts
++++ b/src/Phone.ts
+@@ -1,56 +1,28 @@
++import { PhoneState } from "./PhoneState";
++import { OffState } from "./states";
++
+ export class Phone {
+-	private state: "off" | "locked" | "ready" = "off";
++	private state: PhoneState = new OffState(this);
+ 
+ 	constructor(private fingerprint: string) {}
+ 
++	setState(state: PhoneState): void {
++		this.state = state;
++	}
++
++	recognizes(finger: string): boolean {
++		return finger === this.fingerprint;
++	}
++
+ 	pressPower(): void {
+-		switch (this.state) {
+-			case "off":
+-				console.log("  Powering on.");
+-				this.state = "locked";
+-				break;
+-			case "locked":
+-				console.log("  Powering off.");
+-				this.state = "off";
+-				break;
+-			case "ready":
+-				console.log("  Powering off.");
+-				this.state = "off";
+-				break;
+-		}
++		this.state.pressPower();
+ 	}
+ 
+ 	pressHome(finger: string): void {
+-		switch (this.state) {
+-			case "off":
+-				console.log("  Powering on.");
+-				this.state = "locked";
+-				break;
+-			case "locked":
+-				if (finger === this.fingerprint) {
+-					console.log("  Unlocked.");
+-					this.state = "ready";
+-				} else {
+-					console.log("  Fingerprint not recognized.");
+-				}
+-				break;
+-			case "ready":
+-				console.log("  Going to the home screen.");
+-				break;
+-		}
++		this.state.pressHome(finger);
+ 	}
+ 
+ 	receiveNotification(app: string, text: string): void {
+-		switch (this.state) {
+-			case "off":
+-				console.log(`  Missed a notification from ${app}: the phone is off.`);
+-				break;
+-			case "locked":
+-				console.log(`  🔒 New notification from ${app}`);
+-				break;
+-			case "ready":
+-				console.log(`  🔔 ${app}: ${text}`);
+-				break;
+-		}
++		this.state.receiveNotification(app, text);
+ 	}
+ }
+diff --git a/src/states.ts b/src/states.ts
+new file mode 100644
+index 0000000..636be23
+--- /dev/null
++++ b/src/states.ts
+@@ -0,0 +1,59 @@
++import { Phone } from "./Phone";
++import { PhoneState } from "./PhoneState";
++
++export class OffState implements PhoneState {
++	constructor(private phone: Phone) {}
++
++	pressPower(): void {
++		console.log("  Powering on.");
++		this.phone.setState(new LockedState(this.phone));
++	}
++
++	pressHome(finger: string): void {
++		console.log("  Powering on.");
++		this.phone.setState(new LockedState(this.phone));
++	}
++
++	receiveNotification(app: string, text: string): void {
++		console.log(`  Missed a notification from ${app}: the phone is off.`);
++	}
++}
++
++export class LockedState implements PhoneState {
++	constructor(private phone: Phone) {}
++
++	pressPower(): void {
++		console.log("  Powering off.");
++		this.phone.setState(new OffState(this.phone));
++	}
++
++	pressHome(finger: string): void {
++		if (this.phone.recognizes(finger)) {
++			console.log("  Unlocked.");
++			this.phone.setState(new ReadyState(this.phone));
++		} else {
++			console.log("  Fingerprint not recognized.");
++		}
++	}
++
++	receiveNotification(app: string, text: string): void {
++		console.log(`  🔒 New notification from ${app}`);
++	}
++}
++
++export class ReadyState implements PhoneState {
++	constructor(private phone: Phone) {}
++
++	pressPower(): void {
++		console.log("  Powering off.");
++		this.phone.setState(new OffState(this.phone));
++	}
++
++	pressHome(finger: string): void {
++		console.log("  Going to the home screen.");
++	}
++
++	receiveNotification(app: string, text: string): void {
++		console.log(`  🔔 ${app}: ${text}`);
++	}
++}

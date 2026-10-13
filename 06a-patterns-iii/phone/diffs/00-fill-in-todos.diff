@@ -1,0 +1,52 @@
+commit d9cd60d63c6122041a0f6afa2f37e43e39ceda0c
+Author: b <a@b>
+Date:   Wed Oct 7 12:38:51 2026 -0700
+
+    TODO-0001: fill in what a locked phone does
+    
+    Each event has one switch over the phone's state, and each switch has
+    its own case for every state. So filling in the locked phone's
+    behaviour meant three edits in three methods: powering off, checking
+    the fingerprint, and hiding a notification's text.
+    
+    What a locked phone does is spread across the whole class, mixed in
+    with what the phone does when it's off or ready.
+
+diff --git a/src/Phone.ts b/src/Phone.ts
+index a6cf6eb..82d1f71 100644
+--- a/src/Phone.ts
++++ b/src/Phone.ts
+@@ -10,7 +10,8 @@ export class Phone {
+ 				this.state = "locked";
+ 				break;
+ 			case "locked":
+-				// TODO: A locked phone powers off when Power is pressed.
++				console.log("  Powering off.");
++				this.state = "off";
+ 				break;
+ 			case "ready":
+ 				console.log("  Powering off.");
+@@ -26,8 +27,12 @@ export class Phone {
+ 				this.state = "locked";
+ 				break;
+ 			case "locked":
+-				// TODO: A locked phone unlocks if the finger matches its fingerprint,
+-				// and says "Fingerprint not recognized." if it doesn't.
++				if (finger === this.fingerprint) {
++					console.log("  Unlocked.");
++					this.state = "ready";
++				} else {
++					console.log("  Fingerprint not recognized.");
++				}
+ 				break;
+ 			case "ready":
+ 				console.log("  Going to the home screen.");
+@@ -41,7 +46,7 @@ export class Phone {
+ 				console.log(`  Missed a notification from ${app}: the phone is off.`);
+ 				break;
+ 			case "locked":
+-				// TODO: A locked phone shows which app sent a notification, but not its text.
++				console.log(`  🔒 New notification from ${app}`);
+ 				break;
+ 			case "ready":
+ 				console.log(`  🔔 ${app}: ${text}`);

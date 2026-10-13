@@ -1,0 +1,79 @@
+commit e4e8cd28f94d2b8f788dc45f660a8ec88b4201c3
+Author: b <a@b>
+Date:   Wed Oct 7 13:09:25 2026 -0700
+
+    FEAT-0001: lock the phone out after three unrecognized fingers
+    
+    LockedState counts fingers that don't match, and the third one moves
+    the phone to LockedOutState. A locked-out phone ignores every finger,
+    even the right one, and hides notification text the way a locked phone
+    does. Restarting is the only way out: it comes back on as a fresh
+    LockedState.
+    
+    Phone didn't change. Before, a new state meant a new case in all three
+    switches, plus a failed-tries counter on Phone that would only mean
+    something while the phone was locked.
+
+diff --git a/src/main.ts b/src/main.ts
+index f5dc4dd..948d3c2 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -19,3 +19,9 @@ step("press home with Alex's finger", () => phone.pressHome("Alex"));
+ step("press power", () => phone.pressPower());
+ step("press power", () => phone.pressPower());
+ step("press power", () => phone.pressPower());
++step("press power", () => phone.pressPower());
++step("press home with Sam's finger", () => phone.pressHome("Sam"));
++step("press home with Sam's finger", () => phone.pressHome("Sam"));
++step("press home with Sam's finger", () => phone.pressHome("Sam"));
++step("press home with Alex's finger", () => phone.pressHome("Alex"));
++step("press power", () => phone.pressPower());
+diff --git a/src/states.ts b/src/states.ts
+index 636be23..f140539 100644
+--- a/src/states.ts
++++ b/src/states.ts
+@@ -20,6 +20,8 @@ export class OffState implements PhoneState {
+ }
+ 
+ export class LockedState implements PhoneState {
++	private failedTries = 0;
++
+ 	constructor(private phone: Phone) {}
+ 
+ 	pressPower(): void {
+@@ -32,7 +34,13 @@ export class LockedState implements PhoneState {
+ 			console.log("  Unlocked.");
+ 			this.phone.setState(new ReadyState(this.phone));
+ 		} else {
+-			console.log("  Fingerprint not recognized.");
++			this.failedTries++;
++			if (this.failedTries === 3) {
++				console.log("  Fingerprint not recognized. Too many tries: the phone is locked out.");
++				this.phone.setState(new LockedOutState(this.phone));
++			} else {
++				console.log("  Fingerprint not recognized.");
++			}
+ 		}
+ 	}
+ 
+@@ -57,3 +65,20 @@ export class ReadyState implements PhoneState {
+ 		console.log(`  🔔 ${app}: ${text}`);
+ 	}
+ }
++
++export class LockedOutState implements PhoneState {
++	constructor(private phone: Phone) {}
++
++	pressPower(): void {
++		console.log("  Powering off.");
++		this.phone.setState(new OffState(this.phone));
++	}
++
++	pressHome(finger: string): void {
++		console.log("  Fingerprint disabled: restart the phone to try again.");
++	}
++
++	receiveNotification(app: string, text: string): void {
++		console.log(`  🔒 New notification from ${app}`);
++	}
++}

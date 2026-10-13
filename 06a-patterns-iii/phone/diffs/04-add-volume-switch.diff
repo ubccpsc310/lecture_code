@@ -1,0 +1,89 @@
+commit edc91adc87d6d37c6f6666cefe70cbd38a6b11b6
+Author: b <a@b>
+Date:   Tue Oct 13 09:51:28 2026 -0700
+
+    FEAT-0002: add volume buttons to the switch version
+    
+    The phone gets volume up and volume down buttons. They do nothing while
+    the phone is off, and change the volume between 0 and 10 while it is
+    locked or ready.
+    
+    Phone already switches over its state in every event, so each button is
+    one new method with one switch: a case for every state, written next to
+    each other. Nothing else in the class changed.
+    
+    This is the change the switch version is open to. Compare it with the
+    same buttons in the State version.
+
+diff --git a/src/Phone.ts b/src/Phone.ts
+index a6cf6eb..7a6b92f 100644
+--- a/src/Phone.ts
++++ b/src/Phone.ts
+@@ -1,5 +1,6 @@
+ export class Phone {
+ 	private state: "off" | "locked" | "ready" = "off";
++	private volume = 5;
+ 
+ 	constructor(private fingerprint: string) {}
+ 
+@@ -48,4 +49,37 @@ export class Phone {
+ 				break;
+ 		}
+ 	}
++
++	pressVolumeUp(): void {
++		switch (this.state) {
++			case "off":
++				console.log("  Nothing happens: the phone is off.");
++				break;
++			case "locked":
++				this.changeVolume(1);
++				break;
++			case "ready":
++				this.changeVolume(1);
++				break;
++		}
++	}
++
++	pressVolumeDown(): void {
++		switch (this.state) {
++			case "off":
++				console.log("  Nothing happens: the phone is off.");
++				break;
++			case "locked":
++				this.changeVolume(-1);
++				break;
++			case "ready":
++				this.changeVolume(-1);
++				break;
++		}
++	}
++
++	private changeVolume(by: number): void {
++		this.volume = Math.max(0, Math.min(10, this.volume + by));
++		console.log(`  🔊 Volume ${this.volume}`);
++	}
+ }
+diff --git a/src/main.ts b/src/main.ts
+index f5dc4dd..46b1610 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -8,7 +8,9 @@ function step(label: string, event: () => void): void {
+ }
+ 
+ step("Messages: Lunch at 12?", () => phone.receiveNotification("Messages", "Lunch at 12?"));
++step("press volume up", () => phone.pressVolumeUp());
+ step("press home with Alex's finger", () => phone.pressHome("Alex"));
++step("press volume up", () => phone.pressVolumeUp());
+ step("Messages: Lunch at 12?", () => phone.receiveNotification("Messages", "Lunch at 12?"));
+ step("press home with Sam's finger", () => phone.pressHome("Sam"));
+ step("press home with Alex's finger", () => phone.pressHome("Alex"));
+@@ -16,6 +18,8 @@ step("Calendar: CPSC 310 starts in 10 minutes", () =>
+ 	phone.receiveNotification("Calendar", "CPSC 310 starts in 10 minutes")
+ );
+ step("press home with Alex's finger", () => phone.pressHome("Alex"));
++step("press volume down", () => phone.pressVolumeDown());
++step("press volume down", () => phone.pressVolumeDown());
+ step("press power", () => phone.pressPower());
+ step("press power", () => phone.pressPower());
+ step("press power", () => phone.pressPower());
