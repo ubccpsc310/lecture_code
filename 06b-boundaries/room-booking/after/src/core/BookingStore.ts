@@ -5,9 +5,9 @@ import { Booking } from "./Booking";
  * Adapters outside the core decide how: a file, a database, memory.
  */
 export interface BookingStore {
-	/** Every booking on date, in any room. */
-	bookingsOn(date: string): Booking[];
+	/** Every booking for room on date. */
+	bookingsFor(room: string, date: string): Booking[];
 
-	/** Keeps booking. Afterwards, bookingsOn(booking.date) includes it. */
+	/** Keeps booking. Afterwards, bookingsFor(booking.room, booking.date) includes it. */
 	add(booking: Booking): void;
 }

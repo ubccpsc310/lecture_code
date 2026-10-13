@@ -11,8 +11,8 @@ const FORMAT_VERSION = 2;
 export class JsonBookingStore implements BookingStore {
 	constructor(private file: string) {}
 
-	bookingsOn(date: string): Booking[] {
-		return this.readAll().filter((each) => each.date === date);
+	bookingsFor(room: string, date: string): Booking[] {
+		return this.readAll().filter((each) => each.room === room && each.date === date);
 	}
 
 	add(booking: Booking): void {

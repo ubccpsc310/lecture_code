@@ -1,0 +1,45 @@
+commit f8ea06ebd891bebaf198b8076ce2e4238013efb7
+Author: b <a@b>
+Date:   Tue Oct 13 11:34:49 2026 -0700
+
+    TEST-0001: run the BookingStore contract against the real JSON file
+    
+    bookingStoreContract() is what every BookingStore promises, written
+    once. FakeBookingStore already passed it, and that's why the core's
+    unit tests can trust the fake. One line runs the same contract against
+    a JsonBookingStore on a real file in a temporary directory. That's an
+    integration test: one real adapter, its real resource, and no core.
+    
+    The contract failed on its first run. A JsonBookingStore whose file
+    doesn't exist yet threw ENOENT instead of having no bookings, so the
+    first booking on a new machine would have crashed. The fake can't have
+    that bug, and no core test could see it. The adapter now treats a
+    missing file as no bookings.
+
+diff --git a/src/adapters/JsonBookingStore.ts b/src/adapters/JsonBookingStore.ts
+index 6a693ef..cdf85db 100644
+--- a/src/adapters/JsonBookingStore.ts
++++ b/src/adapters/JsonBookingStore.ts
+@@ -21,6 +21,10 @@ export class JsonBookingStore implements BookingStore {
+ 	}
+ 
+ 	private readAll(): Booking[] {
++		// nothing has been booked yet
++		if (!fs.existsSync(this.file)) {
++			return [];
++		}
+ 		return JSON.parse(fs.readFileSync(this.file, "utf8")).bookings;
+ 	}
+ }
+diff --git a/test/adapters/JsonBookingStore.spec.ts b/test/adapters/JsonBookingStore.spec.ts
+index 40331c3..0ac548c 100644
+--- a/test/adapters/JsonBookingStore.spec.ts
++++ b/test/adapters/JsonBookingStore.spec.ts
+@@ -4,6 +4,5 @@ import { tempFile } from "../tempFile";
+ 
+ // Integration tests: a real JsonBookingStore, writing a real file in a temporary directory. No core.
+ describe("JsonBookingStore", () => {
+-	// TODO: run bookingStoreContract against a JsonBookingStore on a tempFile("bookings.json").
+-	// FakeBookingStore.spec.ts shows how.
++	bookingStoreContract(() => new JsonBookingStore(tempFile("bookings.json")));
+ });

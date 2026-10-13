@@ -1,38 +1,37 @@
-commit 9e38a4737c94a1967765eb3b5abfd0bbfbfff429
+commit 0370431a8c36144379ec773fd82d3ced406e43d9
 Author: b <a@b>
-Date:   Mon Oct 12 15:43:17 2026 -0700
+Date:   Tue Oct 13 11:35:11 2026 -0700
 
-    FEAT-0002: keep bookings in a CSV file Facilities can open in a spreadsheet
+    FEAT-0001: keep bookings in a CSV file Facilities can open in a spreadsheet
     
     Facilities wants to open the bookings in a spreadsheet. CsvBookingStore
     is a second adapter for the same BookingStore port: a header row, then
     one row per booking. main.ts picks it instead of JsonBookingStore, and
     data/bookings.json became data/bookings.csv.
     
-    CsvBookingStore.spec.ts runs the same contract as the other two stores,
-    plus a test of the rows it writes. The e2e tests switched to the CSV
-    store, since that's what yarn start uses now.
+    Its test is one line: the same contract as the other two stores. The
+    end-to-end test switched to the CSV store, since that's what yarn start
+    uses now.
     
-    Nothing in src/core changed, and neither did any core test. Compare
-    FEAT-0001: a smaller change to the file's format changed every test.
-    JsonBookingStore is still here, and still passes its own tests.
+    Nothing in src/core changed, and neither did any core test. Compare the
+    version change in room-booking-discover: a smaller change to the file's
+    format changed every test.
 
 diff --git a/data/bookings.csv b/data/bookings.csv
 new file mode 100644
-index 0000000..909172a
+index 0000000..21589ab
 --- /dev/null
 +++ b/data/bookings.csv
-@@ -0,0 +1,4 @@
+@@ -0,0 +1,3 @@
 +room,student,date,start,end
 +IKB-261,sam,2026-11-03,10:00,12:00
 +IKB-263,priya,2026-11-03,13:00,14:30
-+IKB-261,priya,2026-11-03,15:00,16:00
 diff --git a/data/bookings.json b/data/bookings.json
 deleted file mode 100644
-index f6f8f67..0000000
+index 8db7929..0000000
 --- a/data/bookings.json
 +++ /dev/null
-@@ -1,26 +0,0 @@
+@@ -1,19 +0,0 @@
 -{
 -	"version": 2,
 -	"bookings": [
@@ -49,19 +48,12 @@ index f6f8f67..0000000
 -			"date": "2026-11-03",
 -			"start": "13:00",
 -			"end": "14:30"
--		},
--		{
--			"room": "IKB-261",
--			"student": "priya",
--			"date": "2026-11-03",
--			"start": "15:00",
--			"end": "16:00"
 -		}
 -	]
 -}
 diff --git a/src/adapters/CsvBookingStore.ts b/src/adapters/CsvBookingStore.ts
 new file mode 100644
-index 0000000..0384769
+index 0000000..be1249d
 --- /dev/null
 +++ b/src/adapters/CsvBookingStore.ts
 @@ -0,0 +1,37 @@
@@ -78,8 +70,8 @@ index 0000000..0384769
 +export class CsvBookingStore implements BookingStore {
 +	constructor(private file: string) {}
 +
-+	bookingsOn(date: string): Booking[] {
-+		return this.readAll().filter((each) => each.date === date);
++	bookingsFor(room: string, date: string): Booking[] {
++		return this.readAll().filter((each) => each.room === room && each.date === date);
 +	}
 +
 +	add(booking: Booking): void {
@@ -103,12 +95,12 @@ index 0000000..0384769
 +	}
 +}
 diff --git a/src/main.ts b/src/main.ts
-index 2259c55..2a52c1e 100644
+index 75897f3..afcdbb7 100644
 --- a/src/main.ts
 +++ b/src/main.ts
 @@ -1,8 +1,8 @@
- import { BookingDesk } from "./core/BookingDesk";
  import { BookingStore } from "./core/BookingStore";
+ import { book } from "./core/rooms";
 -import { JsonBookingStore } from "./adapters/JsonBookingStore";
 +import { CsvBookingStore } from "./adapters/CsvBookingStore";
  
@@ -117,7 +109,7 @@ index 2259c55..2a52c1e 100644
  
  const USAGE = `rooms — study room bookings
  
-@@ -32,5 +32,5 @@ export function run(argv: string[], store: BookingStore): string {
+@@ -23,5 +23,5 @@ export function run(argv: string[], store: BookingStore): string {
  }
  
  if (require.main === module) {
@@ -126,69 +118,43 @@ index 2259c55..2a52c1e 100644
  }
 diff --git a/test/adapters/CsvBookingStore.spec.ts b/test/adapters/CsvBookingStore.spec.ts
 new file mode 100644
-index 0000000..c3aeeb2
+index 0000000..20b7a51
 --- /dev/null
 +++ b/test/adapters/CsvBookingStore.spec.ts
-@@ -0,0 +1,34 @@
-+import { expect } from "chai";
-+import * as fs from "fs";
-+import * as os from "os";
-+import * as path from "path";
-+import { Booking } from "../../src/core/Booking";
+@@ -0,0 +1,8 @@
 +import { CsvBookingStore } from "../../src/adapters/CsvBookingStore";
 +import { bookingStoreContract } from "../bookingStoreContract";
++import { tempFile } from "../tempFile";
 +
-+const SAM_10_TO_12: Booking = { room: "IKB-261", student: "sam", date: "2026-11-03", start: "10:00", end: "12:00" };
-+
-+// Integration tests: a real CsvBookingStore, writing a real file in a fresh temporary directory.
++// Integration tests: a real CsvBookingStore, writing a real file in a temporary directory. No core.
 +describe("CsvBookingStore", () => {
-+	let file: string;
-+
-+	beforeEach(() => {
-+		file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rooms-")), "bookings.csv");
-+	});
-+
-+	afterEach(() => {
-+		fs.rmSync(path.dirname(file), { recursive: true, force: true });
-+	});
-+
-+	bookingStoreContract(() => new CsvBookingStore(file));
-+
-+	it("keeps bookings for the next store that opens the same file", () => {
-+		new CsvBookingStore(file).add(SAM_10_TO_12);
-+		expect(new CsvBookingStore(file).bookingsOn("2026-11-03")).to.deep.equal([SAM_10_TO_12]);
-+	});
-+
-+	it("writes a header row, then one row per booking", () => {
-+		new CsvBookingStore(file).add(SAM_10_TO_12);
-+		expect(fs.readFileSync(file, "utf8")).to.equal("room,student,date,start,end\nIKB-261,sam,2026-11-03,10:00,12:00\n");
-+	});
++	bookingStoreContract(() => new CsvBookingStore(tempFile("bookings.csv")));
 +});
 diff --git a/test/e2e.spec.ts b/test/e2e.spec.ts
-index 1462d91..b2d6fc8 100644
+index 54397a1..9c5c6f0 100644
 --- a/test/e2e.spec.ts
 +++ b/test/e2e.spec.ts
-@@ -3,19 +3,19 @@ import * as fs from "fs";
- import * as os from "os";
- import * as path from "path";
+@@ -1,19 +1,19 @@
+ import { expect } from "chai";
  import { run } from "../src/main";
 -import { JsonBookingStore } from "../src/adapters/JsonBookingStore";
 +import { CsvBookingStore } from "../src/adapters/CsvBookingStore";
+ import { tempFile } from "./tempFile";
  
--// End-to-end tests: commands in through run(), the real core, and the real JSON store underneath.
-+// End-to-end tests: commands in through run(), the real core, and the real CSV store underneath.
- // Each command gets a new store, like each `yarn start` does.
+-// End-to-end tests: a command in through run(), the real core, and a real JsonBookingStore underneath.
++// End-to-end tests: a command in through run(), the real core, and a real CsvBookingStore underneath.
  describe("rooms, end to end", () => {
  	let file: string;
  
+ 	beforeEach(() => {
+-		file = tempFile("bookings.json");
++		file = tempFile("bookings.csv");
+ 	});
+ 
+ 	/** Runs one command, with a new store on the same file, the way each `yarn start` does. */
  	function rooms(...argv: string[]): string {
 -		return run(argv, new JsonBookingStore(file));
 +		return run(argv, new CsvBookingStore(file));
  	}
  
- 	beforeEach(() => {
--		file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rooms-")), "bookings.json");
-+		file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rooms-")), "bookings.csv");
- 	});
- 
- 	afterEach(() => {
+ 	it("refuses a booking that overlaps one made by an earlier command", () => {

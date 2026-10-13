@@ -9,8 +9,8 @@ export class FakeBookingStore implements BookingStore {
 		this.bookings = bookings;
 	}
 
-	bookingsOn(date: string): Booking[] {
-		return this.bookings.filter((each) => each.date === date);
+	bookingsFor(room: string, date: string): Booking[] {
+		return this.bookings.filter((each) => each.room === room && each.date === date);
 	}
 
 	add(booking: Booking): void {

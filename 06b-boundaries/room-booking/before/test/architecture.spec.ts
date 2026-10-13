@@ -22,8 +22,7 @@ function isInCore(file: string, imported: string): boolean {
 	return imported.startsWith(".") && path.resolve(path.dirname(file), imported).startsWith(path.resolve(CORE));
 }
 
-// TODO: remove .skip once there is a src/core
-describe.skip("architecture", () => {
+describe("architecture", () => {
 	it("has a core", () => {
 		expect(fs.existsSync(CORE)).to.be.true;
 	});

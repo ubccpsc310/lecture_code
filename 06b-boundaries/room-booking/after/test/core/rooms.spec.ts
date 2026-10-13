@@ -1,14 +1,15 @@
 import { expect } from "chai";
 import { Booking } from "../../src/core/Booking";
-import { refusalFor } from "../../src/core/rules";
+import { book, refusalFor } from "../../src/core/rooms";
+import { FakeBookingStore } from "../FakeBookingStore";
 
 function booking(room: string, student: string, start: string, end: string): Booking {
 	return { room, student, date: "2026-11-03", start, end };
 }
 
 const SAM_10_TO_12 = booking("IKB-261", "sam", "10:00", "12:00");
-const SAM_13_TO_14 = booking("IKB-263", "sam", "13:00", "14:00");
 
+// Unit tests: the core on its own, with plain objects or a FakeBookingStore. No files.
 describe("refusalFor", () => {
 	it("allows a free room", () => {
 		expect(refusalFor(booking("IKB-261", "alex", "10:00", "12:00"), [])).to.be.undefined;
@@ -25,20 +26,33 @@ describe("refusalFor", () => {
 		);
 	});
 
-	it("refuses a booking that overlaps another in the same room", () => {
+	it("refuses a booking that overlaps another", () => {
 		expect(refusalFor(booking("IKB-261", "alex", "11:59", "13:00"), [SAM_10_TO_12])).to.equal(
 			"IKB-261 is already booked 10:00–12:00"
 		);
 	});
 
-	it("allows back-to-back bookings, and overlaps in another room", () => {
+	it("allows a booking back-to-back with another", () => {
 		expect(refusalFor(booking("IKB-261", "alex", "12:00", "13:00"), [SAM_10_TO_12])).to.be.undefined;
-		expect(refusalFor(booking("IKB-265", "alex", "10:00", "12:00"), [SAM_10_TO_12])).to.be.undefined;
+	});
+});
+
+describe("book", () => {
+	it("keeps a booking that no rule refuses", () => {
+		const store = new FakeBookingStore();
+		const request = booking("IKB-261", "alex", "10:00", "12:00");
+		expect(book(store, request)).to.be.undefined;
+		expect(store.bookingsFor("IKB-261", "2026-11-03")).to.deep.equal([request]);
 	});
 
-	it("refuses a student's third booking on the same day", () => {
-		expect(refusalFor(booking("IKB-265", "sam", "15:00", "16:00"), [SAM_10_TO_12, SAM_13_TO_14])).to.equal(
-			"sam already has 2 bookings on 2026-11-03"
-		);
+	it("doesn't keep a booking that a rule refuses", () => {
+		const store = new FakeBookingStore(SAM_10_TO_12);
+		expect(book(store, booking("IKB-261", "alex", "11:00", "13:00"))).to.equal("IKB-261 is already booked 10:00–12:00");
+		expect(store.bookingsFor("IKB-261", "2026-11-03")).to.deep.equal([SAM_10_TO_12]);
+	});
+
+	it("checks a request only against bookings for the same room", () => {
+		const store = new FakeBookingStore(SAM_10_TO_12);
+		expect(book(store, booking("IKB-263", "alex", "10:00", "12:00"))).to.be.undefined;
 	});
 });
