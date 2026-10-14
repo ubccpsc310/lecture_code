@@ -1,0 +1,104 @@
+commit 340764d916a7bd972502bd337bd36b78ddd68033
+Author: b <a@b>
+Date:   Tue Oct 13 20:07:57 2026 -0700
+
+    FEAT-0001: use Facilities' field names in the bookings file
+    
+    Facilities' other tools read data/bookings.json too, and they call a
+    booking's times startTime and endTime. The file now uses those names.
+    
+    No rule changed: the 2-hour limit and overlaps work exactly as before.
+    But the overlap check had to change anyway, because the rules read the
+    same objects that are stored in the file, so they use its field names.
+    
+    Two of the three tests broke. Every test hands FakeFileSystem a JSON
+    string, or reads back the JSON that book() wrote, so the tests knew the
+    file's field names too: the shared fixture and the expected JSON had to
+    change. Only the 2-hour test passed, because it refuses the request
+    before it ever looks at another booking.
+
+diff --git a/data/bookings.json b/data/bookings.json
+index 0defc72..85187f2 100644
+--- a/data/bookings.json
++++ b/data/bookings.json
+@@ -3,14 +3,14 @@
+ 		"room": "IKB-261",
+ 		"student": "sam",
+ 		"date": "2026-11-03",
+-		"start": "10:00",
+-		"end": "12:00"
++		"startTime": "10:00",
++		"endTime": "12:00"
+ 	},
+ 	{
+ 		"room": "IKB-263",
+ 		"student": "priya",
+ 		"date": "2026-11-03",
+-		"start": "13:00",
+-		"end": "14:30"
++		"startTime": "13:00",
++		"endTime": "14:30"
+ 	}
+ ]
+diff --git a/src/bookings.ts b/src/bookings.ts
+index 16b0c5d..6cc499d 100644
+--- a/src/bookings.ts
++++ b/src/bookings.ts
+@@ -1,5 +1,6 @@
+ /**
+  * Study room bookings. Every booking ever made is kept in one JSON file.
++ * Facilities' other tools read that file too, so it uses their field names.
+  */
+ 
+ const DATA_FILE = "data/bookings.json";
+@@ -18,8 +19,8 @@ interface Booking {
+ 	room: string;
+ 	student: string;
+ 	date: string;
+-	start: string;
+-	end: string;
++	startTime: string;
++	endTime: string;
+ }
+ 
+ function minutes(time: string): number {
+@@ -42,12 +43,12 @@ export function book(fs: FileSystem, room: string, student: string, date: string
+ 	for (const other of bookings) {
+ 		// two bookings overlap if each starts before the other ends; back-to-back is fine
+ 		const sameRoom = other.room === room && other.date === date;
+-		if (sameRoom && minutes(start) < minutes(other.end) && minutes(other.start) < minutes(end)) {
+-			return `Can't book: ${room} is already booked ${other.start}–${other.end}`;
++		if (sameRoom && minutes(start) < minutes(other.endTime) && minutes(other.startTime) < minutes(end)) {
++			return `Can't book: ${room} is already booked ${other.startTime}–${other.endTime}`;
+ 		}
+ 	}
+ 
+-	bookings.push({ room, student, date, start, end });
++	bookings.push({ room, student, date, startTime: start, endTime: end });
+ 	fs.writeFileSync(DATA_FILE, JSON.stringify(bookings, null, "\t") + "\n");
+ 	return `Booked ${room} for ${student} on ${date}, ${start}–${end}`;
+ }
+diff --git a/test/bookings.spec.ts b/test/bookings.spec.ts
+index 8be3d81..5b30709 100644
+--- a/test/bookings.spec.ts
++++ b/test/bookings.spec.ts
+@@ -16,7 +16,7 @@ class FakeFileSystem implements FileSystem {
+ 	}
+ }
+ 
+-const SAM_10_TO_12 = `{ "room": "IKB-261", "student": "sam", "date": "2026-11-03", "start": "10:00", "end": "12:00" }`;
++const SAM_10_TO_12 = `{ "room": "IKB-261", "student": "sam", "date": "2026-11-03", "startTime": "10:00", "endTime": "12:00" }`;
+ 
+ describe("book", () => {
+ 	it("books a free room", () => {
+@@ -25,8 +25,8 @@ describe("book", () => {
+ 			"Booked IKB-263 for alex on 2026-11-03, 10:00–12:00"
+ 		);
+ 		expect(JSON.parse(files.written!)).to.deep.equal([
+-			{ room: "IKB-261", student: "sam", date: "2026-11-03", start: "10:00", end: "12:00" },
+-			{ room: "IKB-263", student: "alex", date: "2026-11-03", start: "10:00", end: "12:00" },
++			{ room: "IKB-261", student: "sam", date: "2026-11-03", startTime: "10:00", endTime: "12:00" },
++			{ room: "IKB-263", student: "alex", date: "2026-11-03", startTime: "10:00", endTime: "12:00" },
+ 		]);
+ 	});
+ 

@@ -1,0 +1,16 @@
+[
+	{
+		"room": "IKB-261",
+		"student": "sam",
+		"date": "2026-11-03",
+		"startTime": "10:00",
+		"endTime": "12:00"
+	},
+	{
+		"room": "IKB-263",
+		"student": "priya",
+		"date": "2026-11-03",
+		"startTime": "13:00",
+		"endTime": "14:30"
+	}
+]

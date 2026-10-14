@@ -1,0 +1,49 @@
+commit a3f3d8049ae7537321b4617a2ad8d9c2cd84e624
+Author: b <a@b>
+Date:   Wed Oct 14 09:24:26 2026 -0700
+
+    TEST-0001: design the tests the core's unit tests can't replace
+    
+    The unit tests in test/core/rooms.spec.ts cover the business logic with
+    plain objects and a fake store. Anything that goes wrong outside the
+    core gets past them, so each pending test here names something only a
+    wider test can see, at the narrowest level that can see it.
+    
+    Integration, a real JsonBookingStore on a real file and no core:
+    - a new store, before its file exists
+    - reading back what was written, which translates startTime into start
+    - the field names in the file, which Facilities' tools depend on. A
+      store that wrote start instead of startTime could still read its own
+      bookings back, so this one has to read the file directly.
+    
+    End to end, run() with the real core and a real store: main.ts reads
+    argv, calls the core, and words the answer. Only a test through run()
+    can see that wiring. One test covers it, because the business logic
+    and the file are covered below.
+
+diff --git a/test/adapters/JsonBookingStore.spec.ts b/test/adapters/JsonBookingStore.spec.ts
+index 34144be..ddd6954 100644
+--- a/test/adapters/JsonBookingStore.spec.ts
++++ b/test/adapters/JsonBookingStore.spec.ts
+@@ -14,6 +14,7 @@ const SAM_10_TO_12: Booking = { room: "IKB-261", student: "sam", date: "2026-11-
+ 
+ // Integration tests: a real JsonBookingStore, writing a real file in a temporary directory. No core.
+ describe("JsonBookingStore", () => {
+-	// TODO: what could go wrong in JsonBookingStore that the core's unit tests would never notice?
+-	// Write a pending test for each one: an it() with a title and no function.
++	it("starts with no bookings, before its file exists");
++	it("has a booking once it is added, even in a new store on the same file");
++	it("writes the field names Facilities' tools read");
+ });
+diff --git a/test/e2e.spec.ts b/test/e2e.spec.ts
+index 3062db3..14ef521 100644
+--- a/test/e2e.spec.ts
++++ b/test/e2e.spec.ts
+@@ -23,6 +23,5 @@ describe("rooms, end to end", () => {
+ 		return run(argv, new JsonBookingStore(file));
+ 	}
+ 
+-	// TODO: what could go wrong in main.ts that neither the unit tests nor the integration tests would notice?
+-	// Write a pending test for each one: an it() with a title and no function.
++	it("refuses a booking that overlaps one made by an earlier command");
+ });

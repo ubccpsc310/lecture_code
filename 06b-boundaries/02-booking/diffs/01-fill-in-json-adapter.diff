@@ -1,0 +1,141 @@
+commit bbc530b3ec05251fe4e1d03ed5775ce4f3931d62
+Author: b <a@b>
+Date:   Wed Oct 14 09:23:54 2026 -0700
+
+    REFACTOR-0002: JsonBookingStore adapts fs to the core's BookingStore
+    
+    The core declares the BookingStore port in its own terms: a room's
+    bookings on a date, and add a booking, with times called start and end.
+    Node's fs can't implement that, and Facilities' file calls the times
+    startTime and endTime. JsonBookingStore adapts one to the other, the
+    same way SpotifyAdapter translated artist_name to artist for
+    MusicSource. Reading and writing the file, and the field names, moved
+    here from src/bookings.ts, and nothing else knows about them.
+    
+    run() books through the core's book() with the store it's given.
+    main.ts is left with the jobs at the edge: read argv, word the answer,
+    and pick the real store. It's the one place that names
+    JsonBookingStore.
+    
+    src/bookings.ts is gone: the rules are tested in the core, without a
+    file format. The core still imports nothing from outside src/core.
+
+diff --git a/src/adapters/JsonBookingStore.ts b/src/adapters/JsonBookingStore.ts
+index 8626da2..6cfe721 100644
+--- a/src/adapters/JsonBookingStore.ts
++++ b/src/adapters/JsonBookingStore.ts
+@@ -18,12 +18,24 @@ export class JsonBookingStore implements BookingStore {
+ 	constructor(private file: string) {}
+ 
+ 	bookingsFor(room: string, date: string): Booking[] {
+-		// TODO: read the records from this.file, and return the ones for room on date as Bookings
+-		throw new Error("not implemented");
++		return this.readAll()
++			.filter((each) => each.room === room && each.date === date)
++			.map((each) => ({
++				room: each.room,
++				student: each.student,
++				date: each.date,
++				start: each.startTime,
++				end: each.endTime,
++			}));
+ 	}
+ 
+ 	add(booking: Booking): void {
+-		// TODO: read the records from this.file, add booking as a record, and write them all back
+-		throw new Error("not implemented");
++		const { room, student, date, start, end } = booking;
++		const records = [...this.readAll(), { room, student, date, startTime: start, endTime: end }];
++		fs.writeFileSync(this.file, JSON.stringify(records, null, "\t") + "\n");
++	}
++
++	private readAll(): BookingRecord[] {
++		return JSON.parse(fs.readFileSync(this.file, "utf8"));
+ 	}
+ }
+diff --git a/src/bookings.ts b/src/bookings.ts
+deleted file mode 100644
+index 6cc499d..0000000
+--- a/src/bookings.ts
++++ /dev/null
+@@ -1,54 +0,0 @@
+-/**
+- * Study room bookings. Every booking ever made is kept in one JSON file.
+- * Facilities' other tools read that file too, so it uses their field names.
+- */
+-
+-const DATA_FILE = "data/bookings.json";
+-
+-// A room can be booked for at most 2 hours at a time.
+-const MAX_MINUTES = 120;
+-
+-/** What book() needs from the file system. Node's fs module already has this shape. */
+-export interface FileSystem {
+-	readFileSync(path: string, encoding: "utf8"): string;
+-	writeFileSync(path: string, data: string): void;
+-}
+-
+-/** A room booked by one student for part of one day. Dates are "YYYY-MM-DD", times are 24-hour "HH:MM". */
+-interface Booking {
+-	room: string;
+-	student: string;
+-	date: string;
+-	startTime: string;
+-	endTime: string;
+-}
+-
+-function minutes(time: string): number {
+-	const [hours, mins] = time.split(":").map(Number);
+-	return hours * 60 + mins;
+-}
+-
+-/** Books room for student on date, from start to end, and says whether it worked. */
+-export function book(fs: FileSystem, room: string, student: string, date: string, start: string, end: string): string {
+-	const bookings: Booking[] = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+-
+-	const length = minutes(end) - minutes(start);
+-	if (length <= 0) {
+-		return `Can't book: ${start}–${end} ends before it starts`;
+-	}
+-	if (length > MAX_MINUTES) {
+-		return `Can't book: a room can be booked for at most ${MAX_MINUTES / 60} hours`;
+-	}
+-
+-	for (const other of bookings) {
+-		// two bookings overlap if each starts before the other ends; back-to-back is fine
+-		const sameRoom = other.room === room && other.date === date;
+-		if (sameRoom && minutes(start) < minutes(other.endTime) && minutes(other.startTime) < minutes(end)) {
+-			return `Can't book: ${room} is already booked ${other.startTime}–${other.endTime}`;
+-		}
+-	}
+-
+-	bookings.push({ room, student, date, startTime: start, endTime: end });
+-	fs.writeFileSync(DATA_FILE, JSON.stringify(bookings, null, "\t") + "\n");
+-	return `Booked ${room} for ${student} on ${date}, ${start}–${end}`;
+-}
+diff --git a/src/main.ts b/src/main.ts
+index 5c71446..75897f3 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -1,6 +1,5 @@
+-import * as fs from "fs";
+-import { book } from "./bookings";
+ import { BookingStore } from "./core/BookingStore";
++import { book } from "./core/rooms";
+ import { JsonBookingStore } from "./adapters/JsonBookingStore";
+ 
+ const DATA_FILE = "data/bookings.json";
+@@ -14,8 +13,11 @@ export function run(argv: string[], store: BookingStore): string {
+ 	const [command, ...args] = argv;
+ 	if (command === "book" && args.length === 5) {
+ 		const [room, student, date, start, end] = args;
+-		// TODO: book through the core's book(), with store, instead of through src/bookings.ts
+-		return book(fs, room, student, date, start, end);
++		const refusal = book(store, { room, student, date, start, end });
++		if (refusal !== undefined) {
++			return `Can't book: ${refusal}`;
++		}
++		return `Booked ${room} for ${student} on ${date}, ${start}–${end}`;
+ 	}
+ 	return USAGE;
+ }

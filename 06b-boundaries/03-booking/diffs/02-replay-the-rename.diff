@@ -1,0 +1,84 @@
+commit 43e3179f91d1a8d31781e176cb852429ffd217ed
+Author: b <a@b>
+Date:   Wed Oct 14 09:24:44 2026 -0700
+
+    FEAT-0001: use Facilities' new field names, start_time and end_time
+    
+    Facilities renamed the fields again: startTime is now start_time, and
+    endTime is now end_time.
+    
+    This is the same kind of change as in 01-booking. There, it changed
+    the business logic and broke two of the three tests. Here it changed
+    JsonBookingStore, the data file, and one test: the integration test
+    that reads the file's field names. No business logic, no unit test, and
+    no end-to-end test changed. Each test only crosses what it checks.
+
+diff --git a/data/bookings.json b/data/bookings.json
+index 85187f2..e79488a 100644
+--- a/data/bookings.json
++++ b/data/bookings.json
+@@ -3,14 +3,14 @@
+ 		"room": "IKB-261",
+ 		"student": "sam",
+ 		"date": "2026-11-03",
+-		"startTime": "10:00",
+-		"endTime": "12:00"
++		"start_time": "10:00",
++		"end_time": "12:00"
+ 	},
+ 	{
+ 		"room": "IKB-263",
+ 		"student": "priya",
+ 		"date": "2026-11-03",
+-		"startTime": "13:00",
+-		"endTime": "14:30"
++		"start_time": "13:00",
++		"end_time": "14:30"
+ 	}
+ ]
+diff --git a/src/adapters/JsonBookingStore.ts b/src/adapters/JsonBookingStore.ts
+index 2e816ae..e433740 100644
+--- a/src/adapters/JsonBookingStore.ts
++++ b/src/adapters/JsonBookingStore.ts
+@@ -6,8 +6,8 @@ interface BookingRecord {
+ 	room: string;
+ 	student: string;
+ 	date: string;
+-	startTime: string;
+-	endTime: string;
++	start_time: string;
++	end_time: string;
+ }
+ 
+ /**
+@@ -24,14 +24,14 @@ export class JsonBookingStore implements BookingStore {
+ 				room: each.room,
+ 				student: each.student,
+ 				date: each.date,
+-				start: each.startTime,
+-				end: each.endTime,
++				start: each.start_time,
++				end: each.end_time,
+ 			}));
+ 	}
+ 
+ 	add(booking: Booking): void {
+ 		const { room, student, date, start, end } = booking;
+-		const records = [...this.readAll(), { room, student, date, startTime: start, endTime: end }];
++		const records = [...this.readAll(), { room, student, date, start_time: start, end_time: end }];
+ 		fs.writeFileSync(this.file, JSON.stringify(records, null, "\t") + "\n");
+ 	}
+ 
+diff --git a/test/adapters/JsonBookingStore.spec.ts b/test/adapters/JsonBookingStore.spec.ts
+index 0820933..ff7690d 100644
+--- a/test/adapters/JsonBookingStore.spec.ts
++++ b/test/adapters/JsonBookingStore.spec.ts
+@@ -28,7 +28,7 @@ describe("JsonBookingStore", () => {
+ 		const file = tempFile();
+ 		new JsonBookingStore(file).add(SAM_10_TO_12);
+ 		expect(JSON.parse(fs.readFileSync(file, "utf8"))).to.deep.equal([
+-			{ room: "IKB-261", student: "sam", date: "2026-11-03", startTime: "10:00", endTime: "12:00" },
++			{ room: "IKB-261", student: "sam", date: "2026-11-03", start_time: "10:00", end_time: "12:00" },
+ 		]);
+ 	});
+ });

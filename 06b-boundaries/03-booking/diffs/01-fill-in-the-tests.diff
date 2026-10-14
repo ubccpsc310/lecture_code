@@ -1,0 +1,79 @@
+commit bfc339cfdeb717f04ecd2b8ad78351b22ade5378
+Author: b <a@b>
+Date:   Wed Oct 14 09:24:40 2026 -0700
+
+    TEST-0002: fill in the integration and end-to-end tests
+    
+    Each pending test from TEST-0001 now runs. The integration tests use a
+    real JsonBookingStore on a file in a new temporary directory. The
+    end-to-end test runs two commands through run(), each with a new store
+    on the same file, the way each yarn start does.
+    
+    All four failed on their first run, with ENOENT. A JsonBookingStore
+    whose file doesn't exist yet threw instead of having no bookings, so
+    the first booking on a new machine would have crashed. The core's unit
+    tests use a fake store, so they couldn't have seen it. The adapter now
+    treats a missing file as no bookings.
+
+diff --git a/src/adapters/JsonBookingStore.ts b/src/adapters/JsonBookingStore.ts
+index 6cfe721..2e816ae 100644
+--- a/src/adapters/JsonBookingStore.ts
++++ b/src/adapters/JsonBookingStore.ts
+@@ -36,6 +36,10 @@ export class JsonBookingStore implements BookingStore {
+ 	}
+ 
+ 	private readAll(): BookingRecord[] {
++		// nothing has been booked yet
++		if (!fs.existsSync(this.file)) {
++			return [];
++		}
+ 		return JSON.parse(fs.readFileSync(this.file, "utf8"));
+ 	}
+ }
+diff --git a/test/adapters/JsonBookingStore.spec.ts b/test/adapters/JsonBookingStore.spec.ts
+index ddd6954..0820933 100644
+--- a/test/adapters/JsonBookingStore.spec.ts
++++ b/test/adapters/JsonBookingStore.spec.ts
+@@ -14,7 +14,21 @@ const SAM_10_TO_12: Booking = { room: "IKB-261", student: "sam", date: "2026-11-
+ 
+ // Integration tests: a real JsonBookingStore, writing a real file in a temporary directory. No core.
+ describe("JsonBookingStore", () => {
+-	it("starts with no bookings, before its file exists");
+-	it("has a booking once it is added, even in a new store on the same file");
+-	it("writes the field names Facilities' tools read");
++	it("starts with no bookings, before its file exists", () => {
++		expect(new JsonBookingStore(tempFile()).bookingsFor("IKB-261", "2026-11-03")).to.deep.equal([]);
++	});
++
++	it("has a booking once it is added, even in a new store on the same file", () => {
++		const file = tempFile();
++		new JsonBookingStore(file).add(SAM_10_TO_12);
++		expect(new JsonBookingStore(file).bookingsFor("IKB-261", "2026-11-03")).to.deep.equal([SAM_10_TO_12]);
++	});
++
++	it("writes the field names Facilities' tools read", () => {
++		const file = tempFile();
++		new JsonBookingStore(file).add(SAM_10_TO_12);
++		expect(JSON.parse(fs.readFileSync(file, "utf8"))).to.deep.equal([
++			{ room: "IKB-261", student: "sam", date: "2026-11-03", startTime: "10:00", endTime: "12:00" },
++		]);
++	});
+ });
+diff --git a/test/e2e.spec.ts b/test/e2e.spec.ts
+index 14ef521..29527fe 100644
+--- a/test/e2e.spec.ts
++++ b/test/e2e.spec.ts
+@@ -23,5 +23,12 @@ describe("rooms, end to end", () => {
+ 		return run(argv, new JsonBookingStore(file));
+ 	}
+ 
+-	it("refuses a booking that overlaps one made by an earlier command");
++	it("refuses a booking that overlaps one made by an earlier command", () => {
++		expect(rooms("book", "IKB-261", "alex", "2026-11-03", "10:00", "12:00")).to.equal(
++			"Booked IKB-261 for alex on 2026-11-03, 10:00–12:00"
++		);
++		expect(rooms("book", "IKB-261", "sam", "2026-11-03", "11:00", "12:00")).to.equal(
++			"Can't book: IKB-261 is already booked 10:00–12:00"
++		);
++	});
+ });
