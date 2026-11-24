@@ -23,10 +23,6 @@ For each what-if, **write the scenario as a comment (Given/When/Then), then the 
 1. **Malformed:** what if the request body is `{}`?
 2. **Huge:** what if the request has 100 sections (`BIG`)? You'll need `this.timeout(...)` (so use `function () {}`, not an arrow function) and `Date.now()`. You'll also need to pick a threshold.
 
-Stretch:
-
-3. Read `GET /schedules/:id` and list what *it* assumes. Break one assumption and test it.
-4. Take one assumption we won't code today (only request, allowed, current frontend) and write *just the scenario*.
 
 ## Expected results in `after/`
 

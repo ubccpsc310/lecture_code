@@ -1,5 +1,3 @@
-// You don't need to read this file.
-//
 // Assigns each section to the smallest room that fits it. Deliberately slow: about 20 ms per section,
 // standing in for a real scheduler that has to search many possible timetables.
 

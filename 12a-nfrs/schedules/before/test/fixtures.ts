@@ -18,12 +18,6 @@ export const SMALL = {
 	rooms: ROOMS,
 };
 
-/** A big request: 100 sections. Takes about 2 seconds. */
-export const BIG = {
-	sections: Array.from({ length: 100 }, (_, i) => ({ id: `SECTION ${i + 1}`, size: 20 + (i % 5) * 30 })),
-	rooms: ROOMS,
-};
-
 /** A new, empty directory for a Store to save into. */
 export function freshDir(): Promise<string> {
 	return fs.mkdtemp(path.join(os.tmpdir(), "schedules-"));

@@ -31,8 +31,9 @@ describe("schedules API: non-functional requirements", () => {
 
 	it("rejects a malformed request with 400", async () => {
 		// Given: no schedules
+		const app = makeApp(await freshDir());
 		// When: the Registrar sends a request with no sections or rooms
-		const res = await request(makeApp(await freshDir()))
+		const res = await request(app)
 			.post("/schedules")
 			.send({});
 		// Then: the server says it's the client's mistake
@@ -42,9 +43,10 @@ describe("schedules API: non-functional requirements", () => {
 	it("responds quickly to a big request", async function () {
 		this.timeout(10_000);
 		// Given: no schedules
+		const app = makeApp(await freshDir());
 		// When: the Registrar creates a 100-section schedule
 		const start = Date.now();
-		await request(makeApp(await freshDir()))
+		await request(app)
 			.post("/schedules")
 			.send(BIG);
 		// Then: the server responds in under 1 s (the threshold is the Registrar's call)

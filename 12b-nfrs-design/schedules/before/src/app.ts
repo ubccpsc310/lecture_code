@@ -1,10 +1,12 @@
 import express from "express";
 import { randomUUID } from "crypto";
+import { Jobs } from "./jobs";
 import { schedule } from "./scheduler";
 import { Store } from "./store";
 
 export function makeApp(dir: string) {
 	const store = new Store(dir);
+	const jobs = new Jobs(); // Activity 2
 	const app = express();
 	app.use(express.json());
 

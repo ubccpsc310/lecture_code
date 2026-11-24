@@ -29,11 +29,16 @@ if (!Array.isArray(sections) || !Array.isArray(rooms)) {
 
 ## Activity 2: respond before the work is done (structural)
 
-1. Add a `pending` set of ids still being scheduled. In `PUT`, add the id, start `schedule(...)` then `store.save(...)` **without awaiting it**, remove the id when it's done, and respond `202` with `{ id, status: "pending" }`.
-2. In `GET /schedules/:id`, if the id is pending, respond `{ id, status: "pending" }`.
-3. Your "twice" test now checks the list before the work is done. Add `await waitUntilDone(app, id)` (from `fixtures.ts`) before the `GET`.
-4. Update your "huge" test to use `PUT`. It should pass now.
-5. Update your restart test so the server restarts **right after** a `PUT` of `BIG`.
+`src/jobs.ts` tracks work that's still running. `app.ts` already creates one: `jobs`.
+
+1. In `jobs.ts`, finish `start`: add the id to `pending`, start `work()` **without awaiting it**, and remove the id when it's done.
+2. In `PUT`, wrap the scheduling and saving in `jobs.start(id, async () => { ... })`. Respond `202` with `{ id, status: "pending" }`.
+3. In `GET /schedules/:id`, if `jobs.isPending(id)`, respond `{ id, status: "pending" }`. Your "huge" test should pass now.
+
+Then run everything:
+
+4. **Twice:** the list is now checked before the work is done. Add `await waitUntilDone(app, id)` (from `fixtures.ts`) before the `GET`.
+5. **Restart:** change it so the server restarts **right after** a `PUT` of `BIG`.
 6. Run **all** your tests. What happens?
 
 ## Expected results in `after/`

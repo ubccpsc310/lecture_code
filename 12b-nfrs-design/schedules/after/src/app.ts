@@ -1,10 +1,11 @@
 import express from "express";
+import { Jobs } from "./jobs";
 import { schedule } from "./scheduler";
 import { Store } from "./store";
 
 export function makeApp(dir: string) {
 	const store = new Store(dir);
-	const pending = new Set<string>(); // ids still being scheduled
+	const jobs = new Jobs();
 	const app = express();
 	app.use(express.json());
 
@@ -17,11 +18,10 @@ export function makeApp(dir: string) {
 			return;
 		}
 		const id = req.params.id;
-		pending.add(id);
-		schedule(sections, rooms)
-			.then((result) => store.save(id, result))
-			.catch((err) => console.error(`scheduling ${id} failed`, err))
-			.finally(() => pending.delete(id));
+		jobs.start(id, async () => {
+			const result = await schedule(sections, rooms);
+			await store.save(id, result);
+		});
 		res.status(202).json({ id, status: "pending" });
 	});
 
@@ -30,7 +30,7 @@ export function makeApp(dir: string) {
 	});
 
 	app.get("/schedules/:id", async (req, res) => {
-		if (pending.has(req.params.id)) {
+		if (jobs.isPending(req.params.id)) {
 			res.json({ id: req.params.id, status: "pending" });
 			return;
 		}
